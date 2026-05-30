@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'core/auth_storage.dart';
 import 'features/auth/login_page.dart';
+import 'features/layout/main_layout.dart';
 
 void main() {
   runApp(const MyApp());
@@ -8,11 +10,31 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future<Widget> _getStartPage() async {
+    final user = await AuthStorage.getUser();
+
+    if (user != null) {
+      return MainLayout(role: user['role']);
+    } else {
+      return const LoginPage();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: LoginPage(),
+      home: FutureBuilder(
+        future: _getStartPage(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return snapshot.data!;
+        },
+      ),
     );
   }
 }

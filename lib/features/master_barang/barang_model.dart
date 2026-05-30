@@ -1,58 +1,40 @@
 class Barang {
-  String kode;
-  String kodeSup;
-  String nama;
-  String merk;
-  String partNo;
-  String stam;
-  String qty;
-  String lokasi;
-  String ket;
-  String barcode;
+  final int id;
+  final String barcode;
+  final String kodeInternal;
+  final String kodeSupplier;
+  final String namaBarang;
+  final String partNo;
+  final String merk;
+  final String lokasi;
+  final String qty;
+  final String minStock;
 
   Barang({
-    required this.kode,
-    required this.kodeSup,
-    required this.nama,
-    required this.merk,
-    required this.partNo,
-    required this.stam,
-    required this.qty,
-    required this.lokasi,
-    required this.ket,
+    required this.id,
     required this.barcode,
+    required this.kodeInternal,
+    required this.kodeSupplier,
+    required this.namaBarang,
+    required this.partNo,
+    required this.merk,
+    required this.lokasi,
+    required this.qty,
+    required this.minStock,
   });
 
-  // 🔥 convert ke map (buat database nanti)
-  Map<String, dynamic> toMap() {
-    return {
-      'kode': kode,
-      'kodeSup': kodeSup,
-      'nama': nama,
-      'merk': merk,
-      'partNo': partNo,
-      'stam': stam,
-      'qty': qty,
-      'lokasi': lokasi,
-      'ket': ket,
-      'barcode': barcode,
-    };
-  }
-
-  // 🔥 dari map (ambil dari database)
-  factory Barang.fromMap(Map<String, dynamic> map) {
-    return Barang(
-      kode: map['kode'],
-      kodeSup: map['kodeSup'],
-      nama: map['nama'],
-      merk: map['merk'],
-      partNo: map['partNo'],
-      stam: map['stam'],
-      qty: map['qty'],
-      lokasi: map['lokasi'],
-      ket: map['ket'],
-      barcode: map['barcode'],
-
-    );
-  }
+  factory Barang.fromJson(Map<String, dynamic> json) {
+  return Barang(
+    id: json['id'] ?? 0,
+    barcode: json['barcode'] ?? '',
+    kodeInternal: json['kode_internal'] ?? '-',
+    kodeSupplier: json['kode_supplier'] ?? '-',
+    namaBarang: json['nama_barang'] ?? '-',
+    partNo: json['part_no'] ?? '-',
+    merk: json['merk'] ?? '-',
+    lokasi: json['lokasi'] ?? '-',
+    qty: (json['qty'] ?? 0).toString(),
+    minStock: (json['min_stock'] ?? 0).toString(),
+  );
+}
 }

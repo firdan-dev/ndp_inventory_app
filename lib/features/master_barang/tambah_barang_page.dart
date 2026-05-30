@@ -43,19 +43,18 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
     }
 
     final barang = Barang(
-  kode: kode.text,
-  kodeSup: kodeSup.text,
-  nama: nama.text,
-  merk: merk.text,
-  partNo: partNo.text,
-  stam: stam.text,
-  qty: qty.text,
-  lokasi: lokasi.text,
-  ket: ket.text,
+      id: 0,
+      barcode: barcodeValue.isEmpty ? kode.text : barcodeValue,
+      kodeInternal: kode.text,
+      kodeSupplier: kodeSup.text,
+      namaBarang: nama.text,
+      partNo: partNo.text,
+      merk: merk.text,
+      lokasi: lokasi.text,
+      qty: qty.text,
 
   // 🔥 FIX UTAMA DI SINI
-  barcode: kode.text,
-);
+    );
  
     Navigator.pop(context, barang);
   }
