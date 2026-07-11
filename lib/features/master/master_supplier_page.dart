@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -10,16 +9,15 @@ class MasterSupplierPage extends StatefulWidget {
   State<MasterSupplierPage> createState() => _MasterSupplierPageState();
 }
 
-
-
 class _MasterSupplierPageState extends State<MasterSupplierPage> {
-  final baseUrl = "http://127.0.0.1:3000/api";
-  final searchController = TextEditingController();
-  String keyword = "";
+  static const Color accent = Color(0xffff6a00);
 
+  final baseUrl = "https://api.api-nusantaradiesel.tech/api";
+  final searchController = TextEditingController();
+
+  String keyword = "";
   List suppliers = [];
   List supplierTransactions = [];
-
   Map? selectedSupplier;
 
   bool loading = true;
@@ -29,6 +27,12 @@ class _MasterSupplierPageState extends State<MasterSupplierPage> {
   void initState() {
     super.initState();
     fetchSuppliers();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> fetchSuppliers() async {
@@ -41,6 +45,7 @@ class _MasterSupplierPageState extends State<MasterSupplierPage> {
       debugPrint("SUPPLIER ERROR: $e");
     }
 
+    if (!mounted) return;
     setState(() => loading = false);
   }
 
@@ -55,59 +60,391 @@ class _MasterSupplierPageState extends State<MasterSupplierPage> {
       final res = await http.get(
         Uri.parse("$baseUrl/suppliers/${supplier['id']}/batches"),
       );
-
       supplierTransactions = jsonDecode(res.body);
     } catch (e) {
       debugPrint("SUPPLIER TRANSACTION ERROR: $e");
     }
 
+    if (!mounted) return;
     setState(() => loadingTransactions = false);
   }
 
-String formatRupiah(dynamic value) {
-  final angka = double.tryParse(value.toString()) ?? 0;
+  Future<void> deleteSupplier(int id) async {
+    await http.delete(Uri.parse("$baseUrl/suppliers/$id"));
+    fetchSuppliers();
 
-  final intAngka = angka.toInt();
+    if (selectedSupplier?['id'] == id) {
+      setState(() {
+        selectedSupplier = null;
+        supplierTransactions = [];
+      });
+    }
+  }
 
-  return "Rp ${intAngka.toString().replaceAllMapped(
-    RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-    (m) => "${m[1]}.",
-  )}";
-}
-
+  String formatRupiah(dynamic value) {
+    final angka = double.tryParse(value.toString()) ?? 0;
+    return "Rp ${angka.toInt().toString().replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (m) => "${m[1]}.",
+        )}";
+  }
 
   String formatTanggal(String? date) {
-  if (date == null) return '-';
+    if (date == null) return '-';
+    final d = DateTime.tryParse(date);
+    if (d == null) return date;
 
-  final d = DateTime.tryParse(date);
-  if (d == null) return date;
+    const bulan = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
+    ];
 
-  const bulan = [
-    "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
-    "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
-  ];
+    return "${d.day} ${bulan[d.month - 1]} ${d.year}";
+  }
 
-  return "${d.day} ${bulan[d.month - 1]} ${d.year}";
-}
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xff050505),
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        children: [
+          Expanded(flex: 4, child: buildSupplierList()),
+          const SizedBox(width: 22),
+          Expanded(flex: 5, child: buildSupplierDetail()),
+        ],
+      ),
+    );
+  }
 
-    BoxDecoration glassBox({double radius = 24}) {
+  BoxDecoration glassBox({double radius = 24}) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.085),
-          Colors.white.withOpacity(0.025),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      border: Border.all(color: Colors.white.withOpacity(0.12)),
+      color: const Color(0xff111111).withOpacity(0.94),
+      border: Border.all(color: Colors.white.withOpacity(0.08)),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.25),
-          blurRadius: 30,
+          color: Colors.black.withOpacity(0.45),
+          blurRadius: 35,
         ),
       ],
+    );
+  }
+
+  Widget buildSupplierList() {
+    final filteredSuppliers = suppliers.where((s) {
+      final nama = (s['nama_supplier'] ?? '').toString().toLowerCase();
+      final kontak = (s['kontak'] ?? '').toString().toLowerCase();
+      final alamat = (s['alamat'] ?? '').toString().toLowerCase();
+
+      return nama.contains(keyword) ||
+          kontak.contains(keyword) ||
+          alamat.contains(keyword);
+    }).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: glassBox(radius: 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Master Supplier",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            "Klik supplier untuk lihat riwayat transaksi",
+            style: TextStyle(color: Colors.white54),
+          ),
+          const SizedBox(height: 20),
+
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: searchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: inputDecoration(
+                    "Cari supplier...",
+                    Icons.search,
+                  ),
+                  onChanged: (value) {
+                    setState(() => keyword = value.toLowerCase());
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
+                onPressed: () => showForm(),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text("Tambah"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 22,
+                    vertical: 18,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 22),
+
+          Row(
+            children: [
+              const Icon(Icons.store_rounded, color: accent, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                "Total Supplier: ${filteredSuppliers.length}",
+                style: const TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 18),
+
+          Expanded(
+            child: loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: accent),
+                  )
+                : filteredSuppliers.isEmpty
+                    ? const Center(
+                        child: Text(
+                          "Supplier tidak ditemukan",
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredSuppliers.length,
+                        itemBuilder: (_, i) {
+                          final s = filteredSuppliers[i];
+                          final selected = selectedSupplier?['id'] == s['id'];
+                          return supplierCard(s, selected);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget supplierCard(Map s, bool isSelected) {
+    bool hover = false;
+
+    return StatefulBuilder(
+      builder: (context, setHover) {
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setHover(() => hover = true),
+          onExit: (_) => setHover(() => hover = false),
+          child: GestureDetector(
+            onTap: () => fetchSupplierTransactions(s),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.all(18),
+              transform: Matrix4.translationValues(0, hover ? -4 : 0, 0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: isSelected
+                    ? accent.withOpacity(0.14)
+                    : hover
+                        ? Colors.white.withOpacity(0.06)
+                        : Colors.white.withOpacity(0.035),
+                border: Border.all(
+                  color: isSelected
+                      ? accent.withOpacity(0.42)
+                      : hover
+                          ? accent.withOpacity(0.25)
+                          : Colors.white.withOpacity(0.06),
+                ),
+                boxShadow: isSelected || hover
+                    ? [
+                        BoxShadow(
+                          color: accent.withOpacity(0.14),
+                          blurRadius: 24,
+                        )
+                      ]
+                    : [],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      color: accent.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: accent.withOpacity(0.26)),
+                    ),
+                    child: const Icon(
+                      Icons.store_rounded,
+                      color: accent,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          s['nama_supplier'] ?? '-',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Kontak: ${s['kontak'] ?? '-'}",
+                          style: const TextStyle(color: Colors.white60),
+                        ),
+                        Text(
+                          "Alamat: ${s['alamat'] ?? '-'}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  IconButton(
+                    onPressed: () => showForm(supplier: s),
+                    icon: const Icon(Icons.edit_rounded, color: Colors.white70),
+                  ),
+                  IconButton(
+                    onPressed: () => deleteSupplier(s['id']),
+                    icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildSupplierDetail() {
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: glassBox(radius: 30),
+      child: selectedSupplier == null
+          ? const Center(
+              child: Text(
+                "Pilih supplier untuk lihat transaksi",
+                style: TextStyle(color: Colors.white54),
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selectedSupplier!['nama_supplier'] ?? '-',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  "Kontak: ${selectedSupplier!['kontak'] ?? '-'}",
+                  style: const TextStyle(color: Colors.white54),
+                ),
+                Text(
+                  "Alamat: ${selectedSupplier!['alamat'] ?? '-'}",
+                  style: const TextStyle(color: Colors.white54),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "Riwayat Transaksi",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                Expanded(
+                  child: loadingTransactions
+                      ? const Center(
+                          child: CircularProgressIndicator(color: accent),
+                        )
+                      : supplierTransactions.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "Belum ada transaksi",
+                                style: TextStyle(color: Colors.white54),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: supplierTransactions.length,
+                              itemBuilder: (_, i) {
+                                final t = supplierTransactions[i];
+                                return transactionCard(t);
+                              },
+                            ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget transactionCard(Map t) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.035),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t['nama_barang'] ?? '-',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          info("Part No", t['part_no']),
+          info("Merk", t['merk']),
+          info("Tanggal", formatTanggal(t['created_at'])),
+          info("Kode Supplier", t['kode_supplier']),
+          info("Harga Beli", formatRupiah(t['harga_beli'])),
+          info("Total", formatRupiah(t['total_harga'])),
+          info("PIC", t['pic']),
+        ],
+      ),
+    );
+  }
+
+  Widget info(String label, dynamic value) {
+    return Text(
+      "$label: ${value ?? '-'}",
+      style: const TextStyle(color: Colors.white54),
     );
   }
 
@@ -121,500 +458,79 @@ String formatRupiah(dynamic value) {
       context: context,
       builder: (_) => Dialog(
         backgroundColor: Colors.transparent,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(28),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              width: 560,
-              padding: const EdgeInsets.all(28),
-              decoration: glassBox(radius: 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+        child: Container(
+          width: 560,
+          padding: const EdgeInsets.all(28),
+          decoration: glassBox(radius: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                supplier == null ? "Tambah Supplier" : "Edit Supplier",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 22),
+
+              input(nama, "Nama Supplier", Icons.storefront),
+              input(kontak, "Kontak", Icons.phone),
+              input(alamat, "Alamat", Icons.location_on),
+              input(catatan, "Catatan", Icons.notes),
+
+              const SizedBox(height: 22),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Text(
-                    supplier == null ? "Tambah Supplier" : "Edit Supplier",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Batal",
+                      style: TextStyle(color: Colors.white70),
                     ),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text("Simpan"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      final body = jsonEncode({
+                        "nama_supplier": nama.text.trim(),
+                        "kontak": kontak.text.trim(),
+                        "alamat": alamat.text.trim(),
+                        "catatan": catatan.text.trim(),
+                      });
 
-                  input(nama, "Nama Supplier", Icons.storefront),
-                  input(kontak, "Kontak", Icons.phone),
-                  input(alamat, "Alamat", Icons.location_on),
-                  input(catatan, "Catatan", Icons.notes),
-                                    const SizedBox(height: 22),
+                      if (supplier == null) {
+                        await http.post(
+                          Uri.parse("$baseUrl/suppliers"),
+                          headers: {"Content-Type": "application/json"},
+                          body: body,
+                        );
+                      } else {
+                        await http.put(
+                          Uri.parse("$baseUrl/suppliers/${supplier['id']}"),
+                          headers: {"Content-Type": "application/json"},
+                          body: body,
+                        );
+                      }
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Batal"),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text("Simpan"),
-                        onPressed: () async {
-                          final body = jsonEncode({
-                            "nama_supplier": nama.text.trim(),
-                            "kontak": kontak.text.trim(),
-                            "alamat": alamat.text.trim(),
-                            "catatan": catatan.text.trim(),
-                          });
-
-                          if (supplier == null) {
-                          final res = await http.post(
-                            Uri.parse("$baseUrl/suppliers"),
-                            headers: {"Content-Type": "application/json"},
-                            body: body,
-                          );
-
-                          debugPrint("POST SUPPLIER STATUS: ${res.statusCode}");
-                          debugPrint("POST SUPPLIER BODY: ${res.body}");
-                        } else {
-                          final res = await http.put(
-                            Uri.parse("$baseUrl/suppliers/${supplier['id']}"),
-                            headers: {"Content-Type": "application/json"},
-                            body: body,
-                          );
-
-                          debugPrint("PUT SUPPLIER STATUS: ${res.statusCode}");
-                          debugPrint("PUT SUPPLIER BODY: ${res.body}");
-                        }
-
-                          if (!mounted) return;
-                          Navigator.pop(context);
-                          fetchSuppliers();
-                        },
-                      ),
-                    ],
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      fetchSuppliers();
+                    },
                   ),
                 ],
               ),
-            ),
+            ],
           ),
-        ),
-      ),
-    );
-  }
-
-    Future<void> deleteSupplier(int id) async {
-    await http.delete(Uri.parse("$baseUrl/suppliers/$id"));
-    fetchSuppliers();
-
-    if (selectedSupplier?['id'] == id) {
-      setState(() {
-        selectedSupplier = null;
-        supplierTransactions = [];
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xff0f172a),
-      padding: const EdgeInsets.all(24),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: buildSupplierList(),
-          ),
-          const SizedBox(width: 22),
-          Expanded(
-            flex: 5,
-            child: buildSupplierDetail(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget supplierCard(Map s, bool isSelected) {
-  bool hover = false;
-
-  return StatefulBuilder(
-    builder: (context, setHover) {
-      return MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setHover(() => hover = true),
-        onExit: (_) => setHover(() => hover = false),
-        child: GestureDetector(
-          onTap: () => fetchSupplierTransactions(s),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut,
-            transform: Matrix4.translationValues(0, hover ? -3 : 0, 0),
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            decoration: glassBox(radius: 22).copyWith(
-              color: hover
-                  ? Colors.white.withOpacity(0.075)
-                  : Colors.white.withOpacity(0.025),
-              border: Border.all(
-                color: isSelected
-                    ? const Color(0xff38bdf8)
-                    : hover
-                        ? const Color(0xff38bdf8).withOpacity(0.45)
-                        : Colors.white.withOpacity(0.12),
-              ),
-              boxShadow: hover
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xff38bdf8).withOpacity(0.16),
-                        blurRadius: 28,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xff38bdf8).withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: const Icon(
-                    Icons.store_rounded,
-                    color: Color(0xff38bdf8),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        s['nama_supplier'] ?? '-',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        "Kontak: ${s['kontak'] ?? '-'}",
-                        style: const TextStyle(color: Colors.white54),
-                      ),
-                      Text(
-                        "Alamat: ${s['alamat'] ?? '-'}",
-                        style: const TextStyle(color: Colors.white54),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => showForm(supplier: s),
-                  icon: const Icon(Icons.edit_rounded, color: Colors.white),
-                ),
-                IconButton(
-                  onPressed: () => deleteSupplier(s['id']),
-                  icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    },
-  );
-}
-
-    Widget buildSupplierList() {
-  final filteredSuppliers = suppliers.where((s) {
-    final nama = (s['nama_supplier'] ?? '').toString().toLowerCase();
-    final kontak = (s['kontak'] ?? '').toString().toLowerCase();
-    final alamat = (s['alamat'] ?? '').toString().toLowerCase();
-
-    return nama.contains(keyword) ||
-        kontak.contains(keyword) ||
-        alamat.contains(keyword);
-  }).toList();
-
-  return ClipRRect(
-    borderRadius: BorderRadius.circular(32),
-    child: BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-      child: Container(
-        padding: const EdgeInsets.all(30),
-        decoration: glassBox(radius: 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Master Supplier",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 34,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              "Klik supplier untuk lihat riwayat transaksi",
-              style: TextStyle(color: Colors.white54),
-            ),
-            const SizedBox(height: 18),
-
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: "Cari supplier...",
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      prefixIcon:
-                          const Icon(Icons.search, color: Colors.white54),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.055),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            BorderSide(color: Colors.white.withOpacity(0.12)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide:
-                            const BorderSide(color: Color(0xff38bdf8)),
-                      ),
-                    ),
-                    onChanged: (value) {
-                      setState(() => keyword = value.toLowerCase());
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () => showForm(),
-                  icon: const Icon(Icons.add),
-                  label: const Text("Tambah"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff38bdf8),
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 22,
-                      vertical: 18,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            Text(
-              "Total Supplier: ${filteredSuppliers.length}",
-              style: const TextStyle(color: Colors.white),
-            ),
-
-            const SizedBox(height: 18),
-
-            Expanded(
-              child: loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: filteredSuppliers.length,
-                      itemBuilder: (_, i) {
-                        final s = filteredSuppliers[i];
-                        final isSelected = selectedSupplier?['id'] == s['id'];
-
-                        return supplierCard(s, isSelected);(
-                          onTap: () => fetchSupplierTransactions(s),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 14),
-                            padding: const EdgeInsets.all(18),
-                            decoration: glassBox(radius: 22).copyWith(
-                              border: Border.all(
-                                color: isSelected
-                                    ? const Color(0xff38bdf8)
-                                    : Colors.white.withOpacity(0.12),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.store,
-                                    color: Color(0xff38bdf8)),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        s['nama_supplier'] ?? '-',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 5),
-                                      Text(
-                                        "Kontak: ${s['kontak'] ?? '-'}",
-                                        style: const TextStyle(
-                                            color: Colors.white54),
-                                      ),
-                                      Text(
-                                        "Alamat: ${s['alamat'] ?? '-'}",
-                                        style: const TextStyle(
-                                            color: Colors.white54),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => showForm(supplier: s),
-                                  icon: const Icon(Icons.edit,
-                                      color: Colors.white),
-                                ),
-                                IconButton(
-                                  onPressed: () => deleteSupplier(s['id']),
-                                  icon: const Icon(Icons.delete,
-                                      color: Colors.redAccent),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-    Widget buildSupplierDetail() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(32),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Container(
-          padding: const EdgeInsets.all(30),
-          decoration: glassBox(radius: 32),
-          child: selectedSupplier == null
-              ? const Center(
-                  child: Text(
-                    "Pilih supplier untuk lihat transaksi",
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selectedSupplier!['nama_supplier'] ?? '-',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      "Kontak: ${selectedSupplier!['kontak'] ?? '-'}",
-                      style: const TextStyle(color: Colors.white54),
-                    ),
-                    Text(
-                      "Alamat: ${selectedSupplier!['alamat'] ?? '-'}",
-                      style: const TextStyle(color: Colors.white54),
-                    ),
-                    const SizedBox(height: 22),
-                    const Text(
-                      "Riwayat Transaksi",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Expanded(
-                      child: loadingTransactions
-                          ? const Center(child: CircularProgressIndicator())
-                          : supplierTransactions.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    "Belum ada transaksi",
-                                    style: TextStyle(color: Colors.white54),
-                                  ),
-                                )
-                              : ListView.builder(
-                                  itemCount: supplierTransactions.length,
-                                  itemBuilder: (_, i) {
-                                    final t = supplierTransactions[i];
-
-                                    return Container(
-                                      margin: const EdgeInsets.only(bottom: 12),
-                                      padding: const EdgeInsets.all(16),
-                                      decoration: glassBox(radius: 18),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            t['nama_barang'] ?? '-',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            "Part No: ${t['part_no'] ?? '-'}",
-                                            style: const TextStyle(
-                                                color: Colors.white54),
-                                          ),
-                                          Text(
-                                            "Merk: ${t['merk'] ?? '-'}",
-                                            style: const TextStyle(
-                                                color: Colors.white54),
-                                          ),
-                                          Text(
-                                            "Tanggal: ${formatTanggal(t['created_at'])}",
-                                            style: const TextStyle(color: Colors.white54),
-                                          ),
-                                          Text(
-                                            "Kode Supplier: ${t['kode_supplier'] ?? '-'}",
-                                            style: const TextStyle(
-                                                color: Colors.white54),
-                                          ),
-                                          Text(
-                                            "Harga Beli: ${formatRupiah(t['harga_beli'])}",
-                                            style: const TextStyle(color: Colors.white54),
-                                          ),
-                                          Text(
-                                            "Total: ${formatRupiah(t['total_harga'])}",
-                                            style: const TextStyle(color: Colors.white54),
-                                          ),
-
-                                          Text(
-                                            "PIC: ${t['pic'] ?? '-'}",
-                                            style: const TextStyle(
-                                                color: Colors.white54),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                    ),
-                  ],
-                ),
         ),
       ),
     );
@@ -626,21 +542,27 @@ String formatRupiah(dynamic value) {
       child: TextField(
         controller: c,
         style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.white54),
-          prefixIcon: Icon(icon, color: Colors.white54),
-          filled: true,
-          fillColor: Colors.white.withOpacity(0.055),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xff38bdf8)),
-          ),
-        ),
+        decoration: inputDecoration(label, icon),
+      ),
+    );
+  }
+
+  InputDecoration inputDecoration(String hint, IconData icon) {
+    return InputDecoration(
+      labelText: hint,
+      hintText: hint,
+      labelStyle: const TextStyle(color: Colors.white54),
+      hintStyle: const TextStyle(color: Colors.white38),
+      prefixIcon: Icon(icon, color: accent),
+      filled: true,
+      fillColor: Colors.white.withOpacity(0.045),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: accent),
       ),
     );
   }

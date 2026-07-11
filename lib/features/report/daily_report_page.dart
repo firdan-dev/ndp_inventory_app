@@ -25,6 +25,8 @@ class DailyReportPage extends StatefulWidget {
 }
 
 class _DailyReportPageState extends State<DailyReportPage> {
+  static const Color accent = Color(0xffff6a00);
+
   DateTime selectedDate = DateTime.now();
 
   int barangMasukQty = 0;
@@ -41,6 +43,38 @@ class _DailyReportPageState extends State<DailyReportPage> {
     return "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
   }
 
+  String get displayDate {
+    return "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}";
+  }
+
+  String formatPdfDate(dynamic value) {
+  if (value == null) return "-";
+
+  final dt = DateTime.tryParse(value.toString());
+  if (dt == null) return value.toString();
+
+  return "${dt.day.toString().padLeft(2, '0')}/"
+      "${dt.month.toString().padLeft(2, '0')}/"
+      "${dt.year} "
+      "${dt.hour.toString().padLeft(2, '0')}:"
+      "${dt.minute.toString().padLeft(2, '0')}";
+}
+
+
+  Map<String, List<dynamic>> groupPdfRows(List<dynamic> rows) {
+  final grouped = <String, List<dynamic>>{};
+
+  for (final r in rows) {
+    final kategori = r['kategori']?.toString() ?? 'MASTER';
+    grouped.putIfAbsent(kategori, () => []);
+    grouped[kategori]!.add(r);
+  }
+
+  return grouped;
+}
+  
+
+
   @override
   void initState() {
     super.initState();
@@ -50,10 +84,10 @@ class _DailyReportPageState extends State<DailyReportPage> {
   Future<void> fetchDailyReport() async {
     setState(() => isLoading = true);
 
-    try {
-      final res = await http.get(
-        Uri.parse("http://127.0.0.1:3000/api/report/daily?date=$formattedDate"),
-      );
+      try {
+        final res = await http.get(
+          Uri.parse("https://api.api-nusantaradiesel.tech/api/report/daily?date=$formattedDate"),
+        );
 
       final data = jsonDecode(res.body);
       final summary = data['summary'] ?? {};
@@ -80,12 +114,23 @@ class _DailyReportPageState extends State<DailyReportPage> {
     }
   }
 
-    Future<void> pickDate() async {
+  Future<void> pickDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2024),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: accent,
+              surface: Color(0xff111111),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
     if (picked != null) {
@@ -95,194 +140,271 @@ class _DailyReportPageState extends State<DailyReportPage> {
   }
 
   Future<void> generatePdf() async {
-  if (transactions.isEmpty) {
+  try {
+    final res = await http.get(
+      Uri.parse(
+        "https://api.api-nusantaradiesel.tech/api/report/daily?date=$formattedDate",
+      ),
+    );
+
+    final json = jsonDecode(res.body);
+    final rows = json['transactions'] ?? [];
+
+    if (rows.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Tidak ada data")),
+      );
+      return;
+    }
+
+    final grouped = groupPdfRows(rows);
+
+    final total = rows.length;
+    final stockIn = rows.where((e) {
+      final t = e['type']?.toString().toUpperCase() ?? '';
+      return t == 'IN' || t == 'MASUK';
+    }).length;
+
+    final stockOut = rows.where((e) {
+      final t = e['type']?.toString().toUpperCase() ?? '';
+      return t == 'OUT' || t == 'KELUAR';
+    }).length;
+
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4.landscape,
+        margin: const pw.EdgeInsets.all(24),
+        build: (context) => [
+          pdfHeader(),
+          pw.SizedBox(height: 18),
+
+          pw.Row(
+            children: [
+              pdfSummaryCard("TOTAL", total.toString()),
+              pw.SizedBox(width: 12),
+              pdfSummaryCard("STOCK IN", stockIn.toString()),
+              pw.SizedBox(width: 12),
+              pdfSummaryCard("STOCK OUT", stockOut.toString()),
+              pw.SizedBox(width: 12),
+              pdfSummaryCard("TANGGAL", formattedDate),
+            ],
+          ),
+
+          pw.SizedBox(height: 22),
+
+          ...grouped.entries.map((entry) {
+            return pdfCategorySection(entry.key, entry.value);
+          }),
+        ],
+      ),
+    );
+
+    await Printing.layoutPdf(
+      format: PdfPageFormat.a4.landscape,
+      onLayout: (format) async => pdf.save(),
+    );
+  } catch (e) {
+    debugPrint("PDF ERROR: $e");
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Tidak ada data untuk dibuat PDF")),
-    );
-    return;
-  }
-
-  final pdf = pw.Document();
-
-  final barangMasuk = transactions
-      .where((t) => (t['tipe'] ?? '').toString().toLowerCase() == 'masuk')
-      .toList();
-
-  final barangKeluar = transactions
-      .where((t) => (t['tipe'] ?? '').toString().toLowerCase() == 'keluar')
-      .toList();
-
-  pw.Widget headerCell(String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: 7,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
+      SnackBar(content: Text("Gagal generate PDF: $e")),
     );
   }
+}
 
-  pw.Widget cell(dynamic text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(4),
-      child: pw.Text(
-        text?.toString() ?? '-',
-        style: const pw.TextStyle(fontSize: 7),
-        maxLines: 2,
-        overflow: pw.TextOverflow.clip,
-      ),
-    );
-  }
 
-  pw.Widget buildTable(String title, List data) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+
+
+   pw.Widget pdfHeader() {
+  return pw.Container(
+    width: double.infinity,
+    padding: const pw.EdgeInsets.all(18),
+    decoration: pw.BoxDecoration(
+      color: PdfColor.fromHex("#111111"),
+      borderRadius: pw.BorderRadius.circular(10),
+    ),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(7),
-          color: PdfColors.blueGrey800,
-          child: pw.Text(
-            title,
-            style: pw.TextStyle(
-              color: PdfColors.white,
-              fontSize: 10,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-        ),
-        pw.Table(
-          border: pw.TableBorder.all(
-            color: PdfColors.grey400,
-            width: 0.4,
-          ),
-          columnWidths: {
-            0: const pw.FixedColumnWidth(38),
-            1: const pw.FlexColumnWidth(3),
-            2: const pw.FlexColumnWidth(1.4),
-            3: const pw.FlexColumnWidth(1.5),
-            4: const pw.FlexColumnWidth(1.2),
-            5: const pw.FlexColumnWidth(1.2),
-            6: const pw.FixedColumnWidth(32),
-            7: const pw.FlexColumnWidth(1),
-          },
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            pw.TableRow(
-              decoration: const pw.BoxDecoration(color: PdfColors.grey300),
-              children: [
-                headerCell('Jam'),
-                headerCell('Barang'),
-                headerCell('Merk'),
-                headerCell('Part No'),
-                headerCell('Kode Sup'),
-                headerCell('Kode Int'),
-                headerCell('Qty'),
-                headerCell('PIC'),
-              ],
+            pw.Text(
+              "PT NUSANTARA DIESEL PRATAMA",
+              style: pw.TextStyle(
+                color: PdfColors.white,
+                fontSize: 18,
+                fontWeight: pw.FontWeight.bold,
+              ),
             ),
-            ...data.map(
-              (t) => pw.TableRow(
-                children: [
-                  cell(t['jam']),
-                  cell(t['nama_barang']),
-                  cell(t['merk']),
-                  cell(t['part_no']),
-                  cell(t['kode_supplier']),
-                  cell(t['kode_intern']),
-                  cell(t['qty']),
-                  cell(t['pic']),
-                ],
+            pw.SizedBox(height: 4),
+            pw.Text(
+              "DAILY STOCK REPORT",
+              style: const pw.TextStyle(
+                color: PdfColors.grey400,
+                fontSize: 10,
               ),
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  pdf.addPage(
-    pw.MultiPage(
-      maxPages: 100,
-      pageFormat: PdfPageFormat.a4.landscape,
-      margin: const pw.EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-      build: (context) => [
-        pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'PT NUSANTARA DIESEL PRATAMA',
-                  style: pw.TextStyle(
-                    fontSize: 15,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 3),
-                pw.Text(
-                  'LAPORAN HARIAN STOK',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            pw.Text(
-              'Tanggal: $formattedDate',
-              style: const pw.TextStyle(fontSize: 9),
-            ),
-          ],
-        ),
-
-        pw.SizedBox(height: 14),
-
-        pw.Container(
-          width: double.infinity,
-          padding: const pw.EdgeInsets.all(9),
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
-          ),
-          child: pw.Row(
-            mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-            children: [
-              pw.Text('Masuk: $barangMasukQty pcs',
-                  style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('Keluar: $barangKeluarQty pcs',
-                  style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('Transaksi: $totalTransaksi',
-                  style: const pw.TextStyle(fontSize: 8)),
-              pw.Text('Low Stock: $lowStock',
-                  style: const pw.TextStyle(fontSize: 8)),
-            ],
+        pw.Text(
+          formattedDate,
+          style: pw.TextStyle(
+            color: PdfColor.fromHex("#ff6a00"),
+            fontSize: 14,
+            fontWeight: pw.FontWeight.bold,
           ),
         ),
-
-        pw.SizedBox(height: 16),
-
-        buildTable('BARANG MASUK', barangMasuk),
-        pw.SizedBox(height: 18),
-        
-        pw.NewPage(freeSpace: 220),
-        buildTable('BARANG KELUAR', barangKeluar),
       ],
     ),
   );
+}
 
-  await Printing.layoutPdf(
-    format: PdfPageFormat.a4.landscape,
-    onLayout: (PdfPageFormat format) async => pdf.save(),
+pw.Widget pdfSummaryCard(String title, String value) {
+  return pw.Expanded(
+    child: pw.Container(
+      padding: const pw.EdgeInsets.all(14),
+      decoration: pw.BoxDecoration(
+        color: PdfColor.fromHex("#1a1a1a"),
+        borderRadius: pw.BorderRadius.circular(8),
+        border: pw.Border.all(color: PdfColor.fromHex("#ff6a00")),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            title,
+            style: const pw.TextStyle(
+              color: PdfColors.grey400,
+              fontSize: 9,
+            ),
+          ),
+          pw.SizedBox(height: 6),
+          pw.Text(
+            value,
+            style: pw.TextStyle(
+              color: PdfColors.white,
+              fontSize: 18,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    ),
   );
 }
 
-    @override
+pw.Widget pdfCategorySection(String kategori, List<dynamic> items) {
+  return pw.Container(
+    margin: const pw.EdgeInsets.only(bottom: 18),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          children: [
+            pw.Text(
+              kategori,
+              style: pw.TextStyle(
+                color: PdfColor.fromHex("#ff6a00"),
+                fontSize: 14,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.SizedBox(width: 10),
+            pw.Expanded(
+              child: pw.Divider(color: PdfColors.grey600),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 8),
+        pw.Table(
+          border: pw.TableBorder.all(color: PdfColors.grey700, width: 0.4),
+          columnWidths: {
+            0: const pw.FixedColumnWidth(55),
+            1: const pw.FixedColumnWidth(55),
+            2: const pw.FlexColumnWidth(4),
+            3: const pw.FixedColumnWidth(45),
+            4: const pw.FlexColumnWidth(2.5),
+          },
+          children: [
+            pw.TableRow(
+              decoration: pw.BoxDecoration(color: PdfColor.fromHex("#222222")),
+              children: [
+                pdfHeaderCell("Jam"),
+                pdfHeaderCell("Tipe"),
+                pdfHeaderCell("Item"),
+                pdfHeaderCell("Qty"),
+                pdfHeaderCell("Notes"),
+              ],
+            ),
+            ...items.map((item) {
+              return pw.TableRow(
+                children: [
+                  pdfBodyCell(formatPdfTime(item['created_at'])),
+                  pdfBodyCell(item['type']),
+                  pdfBodyCell(item['item_name']),
+                  pdfBodyCell(item['qty']),
+                  pdfBodyCell(item['notes']),
+                ],
+              );
+            }),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+pw.Widget pdfHeaderCell(String text) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.all(7),
+    child: pw.Text(
+      text,
+      style: pw.TextStyle(
+        color: PdfColor.fromHex("#ff6a00"),
+        fontSize: 9,
+        fontWeight: pw.FontWeight.bold,
+      ),
+    ),
+  );
+}
+
+pw.Widget pdfBodyCell(dynamic text) {
+  return pw.Padding(
+    padding: const pw.EdgeInsets.all(7),
+    child: pw.Text(
+      text?.toString().isEmpty == true ? "-" : text?.toString() ?? "-",
+      style: const pw.TextStyle(
+        color: PdfColors.black,
+        fontSize: 8,
+      ),
+    ),
+  );
+}
+
+String formatPdfTime(dynamic value) {
+  final dt = DateTime.tryParse(value?.toString() ?? "");
+  if (dt == null) return "-";
+
+  return "${dt.hour.toString().padLeft(2, '0')}:"
+      "${dt.minute.toString().padLeft(2, '0')}";
+}
+
+  @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xff0f172a),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xff050505),
+            Color(0xff0b0b0b),
+            Color(0xff111111),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,13 +439,13 @@ class _DailyReportPageState extends State<DailyReportPage> {
   Widget header() {
     return const Row(
       children: [
-        Icon(Icons.analytics_outlined, color: Color(0xff38bdf8)),
+        Icon(Icons.analytics_outlined, color: accent, size: 30),
         SizedBox(width: 14),
         Text(
           "Laporan Harian Stok",
           style: TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: 30,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -337,12 +459,15 @@ class _DailyReportPageState extends State<DailyReportPage> {
       decoration: softBox(),
       child: Row(
         children: [
-          const Icon(Icons.calendar_month_rounded, color: Color(0xff38bdf8)),
+          const Icon(Icons.calendar_month_rounded, color: accent),
           const SizedBox(width: 12),
-          const Text("Tanggal laporan", style: TextStyle(color: Colors.white70)),
+          const Text(
+            "Tanggal laporan",
+            style: TextStyle(color: Colors.white70),
+          ),
           const Spacer(),
           Text(
-            "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
+            displayDate,
             style: const TextStyle(color: Colors.white),
           ),
           const SizedBox(width: 14),
@@ -350,33 +475,78 @@ class _DailyReportPageState extends State<DailyReportPage> {
             onPressed: pickDate,
             icon: const Icon(Icons.date_range, size: 16),
             label: const Text("Pilih Tanggal"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: accent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-    Widget buildList() {
-    if (isLoading) return const Center(child: CircularProgressIndicator());
+  Widget buildList() {
+  if (isLoading) {
+    return const Center(child: CircularProgressIndicator(color: accent));
+  }
 
-    if (transactions.isEmpty) {
-      return const Center(
-        child: Text(
-          "Belum ada transaksi pada tanggal ini",
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.only(top: 10),
-      itemCount: transactions.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => transactionRow(transactions[i]),
+  if (transactions.isEmpty) {
+    return const Center(
+      child: Text(
+        "Belum ada transaksi pada tanggal ini",
+        style: TextStyle(color: Colors.white54),
+      ),
     );
   }
 
-  Widget rowHeader() {
+  final grouped = groupPdfRows(transactions);
+  final widgets = <Widget>[];
+
+  grouped.forEach((kategori, items) {
+    widgets.add(categoryLabel(kategori));
+    widgets.addAll(
+      items.map(
+        (t) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: transactionRow(t),
+        ),
+      ),
+    );
+  });
+
+  return ListView(
+    padding: const EdgeInsets.only(top: 10),
+    children: widgets,
+  );
+}
+
+
+Widget categoryLabel(String text) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+    child: Row(
+      children: [
+        Text(
+          text,
+          style: const TextStyle(
+            color: accent,
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider(color: Colors.white12)),
+      ],
+    ),
+  );
+}
+
+    Widget rowHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 22),
       child: Table(
@@ -398,50 +568,52 @@ class _DailyReportPageState extends State<DailyReportPage> {
     );
   }
 
-    Widget transactionRow(dynamic t) {
-    final tipe = t['tipe']?.toString() ?? '-';
-    final isMasuk = tipe.toLowerCase() == 'masuk';
-    final color = isMasuk ? const Color(0xff22c55e) : const Color(0xfff97316);
+  Widget transactionRow(dynamic t) {
+  final tipe = t['type']?.toString() ?? t['tipe']?.toString() ?? '-';
+  final isMasuk = tipe.toLowerCase() == 'masuk' || tipe.toUpperCase() == 'IN';
+  final color = isMasuk ? const Color(0xff22c55e) : accent;
 
-    return GestureDetector(
-      onTap: () => showTransactionDetail(t),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 22),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.07)),
-        ),
-        child: Table(
-          columnWidths: columnWidths,
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: [
-            TableRow(
-              children: [
-                textCell(t['jam']),
-                statusBadge(tipe, color),
-                textCell(t['nama_barang'], bold: true),
-                textCell(t['merk']),
-                Center(child: textCell(t['qty'])),
-                textCell(t['pic']),
-                Center(
-                  child: IconButton(
-                    onPressed: () => showTransactionDetail(t),
-                    icon: const Icon(
-                      Icons.open_in_new_rounded,
-                      color: Color(0xff38bdf8),
-                    ),
+  return GestureDetector(
+    onTap: () => showTransactionDetail(t),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.035),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
+      ),
+      child: Table(
+        columnWidths: columnWidths,
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: [
+          TableRow(
+            children: [
+              textCell(t['jam'] ?? '-'),
+              statusBadge(tipe, color),
+              textCell(t['item_name'] ?? t['nama_barang'], bold: true),
+              textCell(t['notes'] ?? t['keterangan']),
+              Center(child: textCell(t['qty'])),
+              textCell(t['pic'] ?? '-'),
+              Center(
+                child: IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => showTransactionDetail(t),
+                  icon: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: accent,
+                    size: 22,
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-    Widget statusBadge(String text, Color color) {
+  Widget statusBadge(String text, Color color) {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -465,79 +637,6 @@ class _DailyReportPageState extends State<DailyReportPage> {
     );
   }
 
-    void showTransactionDetail(dynamic t) {
-    showDialog(
-      context: context,
-      builder: (_) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
-              child: Container(
-                width: 700,
-                padding: const EdgeInsets.all(32),
-                decoration: popupBox(),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Detail Transaksi",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 26),
-                    detailRow("Jam", t['jam']),
-                    detailRow("Tipe", t['tipe']),
-                    detailRow("Nama Barang", t['nama_barang']),
-                    detailRow("Part No", t['part_no']),
-                    detailRow("Merk", t['merk']),
-                    detailRow("Qty", t['qty']),
-                    detailRow("PIC", t['pic']),
-                    detailRow("Keterangan", t['keterangan']),
-                    const SizedBox(height: 30),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Tutup"),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget detailRow(String label, dynamic value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 150,
-            child: Text(label, style: const TextStyle(color: Colors.white54)),
-          ),
-          Expanded(
-            child: Text(
-              value?.toString() ?? '-',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget textCell(dynamic value, {bool bold = false}) {
     return Text(
       value?.toString() ?? '-',
@@ -550,67 +649,111 @@ class _DailyReportPageState extends State<DailyReportPage> {
     );
   }
 
-
-Widget glowButton() {
-  return InkWell(
-    onTap: () {
-      debugPrint("GENERATE PDF CLICKED");
-      generatePdf();
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
-      decoration: BoxDecoration(
-        color: const Color(0xff38bdf8),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.picture_as_pdf_rounded, color: Colors.white),
-          SizedBox(width: 10),
-          Text(
-            "Generate PDF",
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
-        ],
+  void showTransactionDetail(dynamic t) {
+  showDialog(
+    context: context,
+    builder: (_) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 700,
+        padding: const EdgeInsets.all(32),
+        decoration: popupBox(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Detail Transaksi",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 26),
+            detailRow("Kategori", t['kategori']),
+            detailRow("Tanggal", t['created_at']),
+            detailRow("Tipe", t['type'] ?? t['tipe']),
+            detailRow("Item", t['item_name'] ?? t['nama_barang']),
+            detailRow("Qty", t['qty']),
+            detailRow("PIC", t['pic'] ?? '-'),
+            detailRow("Notes", t['notes'] ?? t['keterangan']),
+            const SizedBox(height: 30),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text("Tutup"),
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );
 }
 
-  BoxDecoration glassBox() {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(30),
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.08),
-          Colors.white.withOpacity(0.025),
-        ],
-      ),
-      border: Border.all(color: Colors.white.withOpacity(0.10)),
-    );
-  }
+Widget detailRow(String label, dynamic value) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 14),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 150,
+          child: Text(label, style: const TextStyle(color: Colors.white54)),
+        ),
+        Expanded(
+          child: Text(
+            value?.toString() ?? '-',
+            style: const TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
-  BoxDecoration softBox() {
-    return BoxDecoration(
-      color: Colors.white.withOpacity(0.045),
-      borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
-    );
-  }
+Widget glowButton() {
+  return ElevatedButton.icon(
+    onPressed: generatePdf,
+    icon: const Icon(Icons.picture_as_pdf_rounded),
+    label: const Text("Generate PDF"),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: accent,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+  );
+}
 
-  BoxDecoration popupBox() {
-    return BoxDecoration(
-      borderRadius: BorderRadius.circular(28),
-      gradient: LinearGradient(
-        colors: [
-          const Color(0xff1e293b).withOpacity(0.95),
-          const Color(0xff0f172a).withOpacity(0.98),
-        ],
-      ),
-      border: Border.all(color: Colors.white.withOpacity(0.12)),
-    );
-  }
+BoxDecoration glassBox() {
+  return BoxDecoration(
+    color: const Color(0xff111111).withOpacity(.94),
+    borderRadius: BorderRadius.circular(30),
+    border: Border.all(color: Colors.white.withOpacity(.08)),
+  );
+}
+
+BoxDecoration softBox() {
+  return BoxDecoration(
+    color: Colors.white.withOpacity(.045),
+    borderRadius: BorderRadius.circular(22),
+    border: Border.all(color: Colors.white.withOpacity(.08)),
+  );
+}
+
+BoxDecoration popupBox() {
+  return BoxDecoration(
+    color: const Color(0xff111111),
+    borderRadius: BorderRadius.circular(28),
+    border: Border.all(color: Colors.white.withOpacity(.10)),
+  );
+}
 }
 
 const headerStyle = TextStyle(

@@ -12,10 +12,16 @@ import '../transaksi/history_surat_jalan_page.dart';
 import '../report/daily_report_page.dart';
 import 'package:ndp_inventory_app/features/report/weekly_report_page.dart';
 import 'package:ndp_inventory_app/features/report/monthly_report_page.dart';
+import 'package:ndp_inventory_app/features/master/user_role_page.dart';
+import 'package:ndp_inventory_app/features/master/system_gudang_page.dart';
+import '../service_customer/pages/service_customer_page.dart';
+import 'package:ndp_inventory_app/features/radiator/pages/radiator_page.dart';
+import 'package:ndp_inventory_app/features/injector/pages/injector_page.dart';
+import 'package:ndp_inventory_app/features/fip/fip_pages.dart';
+import '../master/mechanic_management_page.dart';
 
 class MainLayout extends StatefulWidget {
   final String role;
-  
 
   const MainLayout({
     super.key,
@@ -28,79 +34,112 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int selectedIndex = 0;
+  String username = "";
 
-void logout(BuildContext context) async {
-  await AuthStorage.logout();
+  static const Color accentOrange = Color(0xffff6a00);
 
-  Navigator.pushAndRemoveUntil(
-    context,
-    MaterialPageRoute(builder: (_) => const LoginPage()),
-    (route) => false,
-  );
-}
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
 
-String username = "";
+  void loadUser() async {
+    final user = await AuthStorage.getUser();
 
+    setState(() {
+      username = user?['username'] ?? '';
+    });
+  }
 
-@override
-void initState() {
-  super.initState();
-  loadUser();
-}
+  void logout(BuildContext context) async {
+    await AuthStorage.logout();
 
-void loadUser() async {
-  final user = await AuthStorage.getUser();
-  setState(() {
-    username = user?['username'] ?? '';
-  });
-}
-
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginPage(),
+      ),
+      (route) => false,
+    );
+  }
 
   void handleNavigation(int index) {
     setState(() => selectedIndex = index);
   }
 
   List<Widget> get pages => [
-        const DashboardPage(),
+        DashboardPage(
+  onOpenServiceCustomer: () {
+    setState(() {
+      selectedIndex = 13;
+    });
+  },
+  onOpenSuratJalan: () {
+    setState(() {
+      selectedIndex = 4;
+    });
+  },
+),
+
         const MasterBarangPage(),
         const MasterSupplierPage(),
-        BarangMasukPage(onSuccess: () => setState(() => selectedIndex = 1)),
+        BarangMasukPage(
+          onSuccess: () => setState(() => selectedIndex = 1),
+        ),
         const SuratJalanPage(),
         const Center(child: Text("Barcode")),
         const DailyReportPage(),
         const WeeklyReportPage(),
         const MonthlyReportPage(),
-        const Center(child: Text("Laporan Bulanan")),
-        const Center(child: Text("User Role")),
-        const Center(child: Text("System Gudang")),
+        const MechanicManagementPage(),
+        const UserRolePage(),
+        const SystemGudangPage(),
         const HistorySuratJalanPage(),
+        const ServiceCustomerPage(),
+        const RadiatorPage(),
+        const InjectorPage(),
+        const FipPage(),
       ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff0f172a),
-      body: Row(
-        children: [
-          sidebar(),
-          Expanded(
-            child: Column(
-              children: [
-                topBar(),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    child: Container(
-                      key: ValueKey(selectedIndex),
-                      color: const Color(0xff0f172a),
-                      child: pages[selectedIndex],
+      backgroundColor: const Color(0xff050505),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Color(0xff020202),
+              Color(0xff070707),
+              Color(0xff0d0d0d),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Row(
+          children: [
+            sidebar(),
+            Expanded(
+              child: Column(
+                children: [
+                  topBar(),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      child: Container(
+                        key: ValueKey(selectedIndex),
+                        color: Colors.transparent,
+                        child: pages[selectedIndex],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -113,7 +152,10 @@ void loadUser() async {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(28),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          filter: ImageFilter.blur(
+            sigmaX: 20,
+            sigmaY: 20,
+          ),
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -121,28 +163,112 @@ void loadUser() async {
               brand(),
               const SizedBox(height: 28),
 
-              sidebarItem("Dashboard", Icons.dashboard_rounded, 0),
+              sidebarItem(
+                "Dashboard",
+                Icons.dashboard_rounded,
+                0,
+              ),
 
               const SidebarTitle("MASTER"),
-              sidebarItem("Master Barang", Icons.inventory_2_rounded, 1),
+
+              sidebarItem(
+                "Master Barang",
+                Icons.inventory_2_rounded,
+                1,
+              ),
+
               if (widget.role == "masterUser")
-                sidebarItem("Master Supplier", Icons.store_rounded, 2),
+                sidebarItem(
+                  "Master Supplier",
+                  Icons.store_rounded,
+                  2,
+                ),
+                sidebarItem(
+                  "Service Customer",
+                  Icons.build_circle_rounded,
+                  13,
+                ),
+                sidebarItem(
+                  "Radiator",
+                  Icons.ac_unit,
+                  14,
+                ),
+
+                sidebarItem(
+                  "Injector", 
+                  Icons.settings_input_component, 
+                  15,
+                  ),
+
+                sidebarItem(
+                  "Fuel Injection",
+                  Icons.local_gas_station_rounded,
+                  16,
+                  ),
+
 
               const SidebarTitle("TRANSAKSI"),
-              sidebarItem("Barang Masuk", Icons.add_box_rounded, 3),
-              sidebarItem("Surat Jalan", Icons.local_shipping_rounded, 4),
-              sidebarItem("History Surat Jalan", Icons.history_rounded, 12),
+
+              sidebarItem(
+                "Barang Masuk",
+                Icons.add_box_rounded,
+                3,
+              ),
+
+              sidebarItem(
+                "Surat Jalan",
+                Icons.local_shipping_rounded,
+                4,
+              ),
+
+              sidebarItem(
+                "History Surat Jalan",
+                Icons.history_rounded,
+                12,
+              ),
 
               const SidebarTitle("REPORT"),
-              sidebarItem("Laporan Harian", Icons.analytics_rounded, 6),
-              sidebarItem("Laporan Mingguan", Icons.bar_chart_rounded, 7),
-              sidebarItem("Laporan Bulanan", Icons.insert_chart_rounded, 8),
+
+              sidebarItem(
+                "Laporan Harian",
+                Icons.analytics_rounded,
+                6,
+              ),
+
+              sidebarItem(
+                "Laporan Mingguan",
+                Icons.bar_chart_rounded,
+                7,
+              ),
+
+              sidebarItem(
+                "Laporan Bulanan",
+                Icons.insert_chart_rounded,
+                8,
+              ),
 
               const SidebarTitle("SYSTEM"),
+
               if (widget.role == "masterUser")
-                sidebarItem("User Role", Icons.manage_accounts_rounded, 9),
+                sidebarItem(
+                  "User Role",
+                  Icons.manage_accounts_rounded,
+                  10,
+                ),
+
               if (widget.role == "masterUser")
-                sidebarItem("System Gudang", Icons.settings_rounded, 10),
+                sidebarItem(
+                  "Mechanic Management",
+                  Icons.engineering_rounded,
+                  9,
+                ),
+
+              if (widget.role == "masterUser")
+                sidebarItem(
+                  "System Gudang",
+                  Icons.settings_rounded,
+                  11,
+                ),
             ],
           ),
         ),
@@ -156,11 +282,16 @@ void loadUser() async {
         Container(
           padding: const EdgeInsets.all(11),
           decoration: BoxDecoration(
-            color: const Color(0xff38bdf8).withOpacity(0.16),
+            color: accentOrange.withOpacity(0.14),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xff38bdf8).withOpacity(0.25)),
+            border: Border.all(
+              color: accentOrange.withOpacity(0.28),
+            ),
           ),
-          child: const Icon(Icons.warehouse_rounded, color: Color(0xff38bdf8)),
+          child: const Icon(
+            Icons.warehouse_rounded,
+            color: accentOrange,
+          ),
         ),
         const SizedBox(width: 12),
         const Column(
@@ -176,7 +307,10 @@ void loadUser() async {
             ),
             Text(
               "Stock Management",
-              style: TextStyle(color: Colors.white38, fontSize: 11),
+              style: TextStyle(
+                color: Colors.white38,
+                fontSize: 11,
+              ),
             ),
           ],
         ),
@@ -184,7 +318,7 @@ void loadUser() async {
     );
   }
 
-  Widget topBar() {
+    Widget topBar() {
     return Container(
       height: 70,
       margin: const EdgeInsets.fromLTRB(0, 14, 14, 0),
@@ -200,22 +334,20 @@ void loadUser() async {
           const SizedBox(width: 10),
           quickButton("Report", Icons.analytics_rounded, 6),
           const Spacer(),
-         Text(
+          Text(
             username.isEmpty ? widget.role : "$username (${widget.role})",
             style: const TextStyle(color: Colors.white60),
           ),
           const SizedBox(width: 12),
-          
-            PopupMenuButton<String>(
-              color: const Color(0xff111827),
-              offset: const Offset(0, 55),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+          PopupMenuButton<String>(
+            color: const Color(0xff151515),
+            offset: const Offset(0, 55),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             onSelected: (value) {
               if (value == 'logout') logout(context);
             },
-
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'logout',
@@ -247,14 +379,18 @@ void loadUser() async {
               label: Text(title, style: const TextStyle(fontSize: 12)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: active
-                    ? const Color(0xff38bdf8)
-                    : Colors.white.withOpacity(hover ? 0.12 : 0.06),
+                    ? accentOrange.withOpacity(0.22)
+                    : Colors.white.withOpacity(hover ? 0.10 : 0.055),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: active
+                        ? accentOrange.withOpacity(0.35)
+                        : Colors.white.withOpacity(0.08),
+                  ),
                 ),
               ),
             ),
@@ -283,21 +419,21 @@ void loadUser() async {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 color: active
-                    ? const Color(0xff38bdf8).withOpacity(0.18)
+                    ? accentOrange.withOpacity(0.18)
                     : hover
                         ? Colors.white.withOpacity(0.07)
                         : Colors.transparent,
                 border: Border.all(
                   color: active
-                      ? const Color(0xff38bdf8).withOpacity(0.45)
+                      ? accentOrange.withOpacity(0.38)
                       : Colors.white.withOpacity(hover ? 0.08 : 0),
                 ),
                 boxShadow: active
                     ? [
                         BoxShadow(
-                          color: const Color(0xff38bdf8).withOpacity(0.18),
+                          color: accentOrange.withOpacity(0.22),
                           blurRadius: 24,
-                        )
+                        ),
                       ]
                     : [],
               ),
@@ -306,7 +442,7 @@ void loadUser() async {
                   Icon(
                     icon,
                     size: 19,
-                    color: active ? const Color(0xff38bdf8) : Colors.white54,
+                    color: active ? accentOrange : Colors.white54,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -314,8 +450,7 @@ void loadUser() async {
                       title,
                       style: TextStyle(
                         color: active ? Colors.white : Colors.white60,
-                        fontWeight:
-                            active ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -324,7 +459,7 @@ void loadUser() async {
                       width: 6,
                       height: 6,
                       decoration: const BoxDecoration(
-                        color: Color(0xff38bdf8),
+                        color: accentOrange,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -340,19 +475,15 @@ void loadUser() async {
   BoxDecoration glassBox({double radius = 28}) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      gradient: LinearGradient(
-        colors: [
-          Colors.white.withOpacity(0.075),
-          Colors.white.withOpacity(0.025),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
+      color: const Color(0xff111111).withOpacity(0.92),
+      border: Border.all(
+        color: Colors.white.withOpacity(0.08),
       ),
-      border: Border.all(color: Colors.white.withOpacity(0.10)),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xff38bdf8).withOpacity(0.07),
-          blurRadius: 35,
+          color: Colors.black.withOpacity(0.55),
+          blurRadius: 40,
+          spreadRadius: 2,
         ),
       ],
     );

@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import '../../core/auth_storage.dart';
+import 'login_success_page.dart';
 import '../layout/main_layout.dart';
 
 class LoginPage extends StatefulWidget {
@@ -17,13 +18,10 @@ class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
   late AnimationController controller;
 
-  bool isDark = true;
   bool isHoverLogin = false;
 
   final usernameController = TextEditingController();
   final passwordController = TextEditingController();
-
-  
 
   @override
   void initState() {
@@ -42,7 +40,7 @@ class _LoginPageState extends State<LoginPage>
     super.dispose();
   }
 
- Future<void> handleLogin() async {
+  Future<void> handleLogin() async {
   final auth = AuthService();
 
   final user = await auth.login(
@@ -51,15 +49,24 @@ class _LoginPageState extends State<LoginPage>
   );
 
   if (user != null) {
-    await AuthStorage.saveUser(user); // 🔥 simpan session
+    await AuthStorage.saveUser(user);
+
+    if (!mounted) return;
+final role = user['role']?.toString() ?? '';
+
+final username =
+    (user['nama_pic']?.toString().trim().isNotEmpty ?? false)
+        ? user['nama_pic'].toString()
+        : user['username']?.toString() ??
+            usernameController.text.trim();
 
     Navigator.pushReplacement(
       context,
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => MainLayout(role: user['role']),
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
+      MaterialPageRoute(
+        builder: (_) => LoginSuccessPage(
+          username: username,
+          role: role,
+        ),
       ),
     );
   } else {
@@ -69,23 +76,19 @@ class _LoginPageState extends State<LoginPage>
   }
 }
 
-
   @override
   Widget build(BuildContext context) {
-    final textColor = isDark ? Colors.white : Colors.black;
+    const textColor = Colors.white;
 
     return Scaffold(
-      body: AnimatedContainer(
-        duration: const Duration(milliseconds: 400),
-        decoration: BoxDecoration(
+      body: Container(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: isDark
-                ? [
-                    const Color(0xff020617),
-                    const Color(0xff07111f),
-                    const Color(0xff0f172a),
-                  ]
-                : [Colors.grey.shade200, Colors.white],
+            colors: [
+              Color(0xff030303),
+              Color(0xff0b0b0b),
+              Color(0xff121212),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -105,12 +108,12 @@ class _LoginPageState extends State<LoginPage>
             Positioned(
               top: -130,
               left: -90,
-              child: blurCircle(const Color(0xff2563eb), 280),
+              child: blurCircle(const Color(0xff2a2a2a), 280),
             ),
             Positioned(
               bottom: -150,
               right: -120,
-              child: blurCircle(const Color(0xff06b6d4), 320),
+              child: blurCircle(const Color(0xff1f1f1f), 320),
             ),
 
             Center(
@@ -145,16 +148,14 @@ class _LoginPageState extends State<LoginPage>
           width: 460,
           padding: const EdgeInsets.all(34),
           decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withOpacity(0.075)
-                : Colors.white.withOpacity(0.78),
+            color: const Color(0xff111111).withOpacity(0.90),
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withOpacity(0.16)),
+            border: Border.all(color: Colors.white.withOpacity(0.10)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xff38bdf8).withOpacity(0.22),
-                blurRadius: 60,
-                spreadRadius: 2,
+                color: Colors.black.withOpacity(0.65),
+                blurRadius: 70,
+                spreadRadius: 4,
               ),
             ],
           ),
@@ -166,14 +167,14 @@ class _LoginPageState extends State<LoginPage>
                 builder: (_, __) {
                   final pulse = sin(controller.value * pi * 2);
                   return Transform.translate(
-                    offset: Offset(0, pulse * 5),
+                    offset: Offset(0, pulse * 4),
                     child: Container(
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xff38bdf8).withOpacity(0.38),
-                            blurRadius: 30 + (pulse.abs() * 25),
+                            color: Colors.white.withOpacity(0.12),
+                            blurRadius: 25 + (pulse.abs() * 20),
                           ),
                         ],
                       ),
@@ -203,7 +204,7 @@ class _LoginPageState extends State<LoginPage>
                 "Smart Warehouse Management System",
                 style: TextStyle(
                   fontSize: 12,
-                  color: textColor.withOpacity(0.62),
+                  color: textColor.withOpacity(0.55),
                 ),
               ),
 
@@ -241,8 +242,9 @@ class _LoginPageState extends State<LoginPage>
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xff38bdf8)
-                              .withOpacity(isHoverLogin ? 0.55 : 0.25),
+                          color: Colors.white.withOpacity(
+                            isHoverLogin ? 0.22 : 0.10,
+                          ),
                           blurRadius: isHoverLogin ? 35 : 18,
                         ),
                       ],
@@ -250,10 +252,16 @@ class _LoginPageState extends State<LoginPage>
                     child: ElevatedButton(
                       onPressed: handleLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff2563eb),
+                        backgroundColor: isHoverLogin
+                            ? const Color(0xff2a2a2a)
+                            : const Color(0xff1c1c1c),
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.12),
+                          ),
                         ),
                       ),
                       child: const Text(
@@ -266,22 +274,6 @@ class _LoginPageState extends State<LoginPage>
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 18),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.dark_mode,
-                      size: 18, color: textColor.withOpacity(0.65)),
-                  Switch(
-                    value: isDark,
-                    onChanged: (v) => setState(() => isDark = v),
-                  ),
-                  Icon(Icons.light_mode,
-                      size: 18, color: textColor.withOpacity(0.65)),
-                ],
               ),
             ],
           ),
@@ -296,10 +288,10 @@ class _LoginPageState extends State<LoginPage>
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: color.withOpacity(0.22),
+        color: color.withOpacity(0.32),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.35),
+            color: color.withOpacity(0.45),
             blurRadius: 130,
             spreadRadius: 45,
           ),
@@ -321,25 +313,22 @@ class _LoginPageState extends State<LoginPage>
       style: TextStyle(color: textColor),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: textColor.withOpacity(0.6)),
-        prefixIcon: Icon(icon, color: textColor.withOpacity(0.65)),
+        labelStyle: TextStyle(color: textColor.withOpacity(0.55)),
+        prefixIcon: Icon(icon, color: textColor.withOpacity(0.60)),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.065),
+        fillColor: const Color(0xff1a1a1a),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.13)),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xff38bdf8), width: 1.5),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.35)),
         ),
       ),
     );
   }
 }
-    
-
-
 
 class DeliveryTruckPainter extends CustomPainter {
   final double progress;
@@ -348,19 +337,19 @@ class DeliveryTruckPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final neon = Paint()
-      ..color = const Color(0xff38bdf8).withOpacity(0.55)
+      ..color = Colors.white.withOpacity(0.22)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
 
     final glow = Paint()
-      ..color = const Color(0xff38bdf8).withOpacity(0.12)
+      ..color = Colors.white.withOpacity(0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 8
       ..strokeCap = StrokeCap.round;
 
     final fill = Paint()
-      ..color = const Color(0xff38bdf8).withOpacity(0.08)
+      ..color = Colors.white.withOpacity(0.035)
       ..style = PaintingStyle.fill;
 
     final t = progress;
@@ -372,7 +361,7 @@ class DeliveryTruckPainter extends CustomPainter {
 
     for (int i = 0; i < 5; i++) {
       final trailPaint = Paint()
-        ..color = const Color(0xff38bdf8).withOpacity(0.12 - i * 0.018)
+        ..color = Colors.white.withOpacity(0.10 - i * 0.015)
         ..strokeWidth = 2
         ..strokeCap = StrokeCap.round;
 
@@ -387,6 +376,7 @@ class DeliveryTruckPainter extends CustomPainter {
       const Rect.fromLTWH(-70, -28, 95, 42),
       const Radius.circular(8),
     );
+
     canvas.drawRRect(body, fill);
     canvas.drawRRect(body, glow);
     canvas.drawRRect(body, neon);
@@ -408,13 +398,12 @@ class DeliveryTruckPainter extends CustomPainter {
       Rect.fromLTWH(-48, boxY, 28, 24),
       const Radius.circular(4),
     );
+
     canvas.drawRRect(box, fill);
     canvas.drawRRect(box, neon);
-    canvas.drawLine(Offset(-34, boxY), Offset(-34, boxY + 24), neon);
-    canvas.drawLine(Offset(-48, boxY + 12), Offset(-20, boxY + 12), neon);
 
     final wheelPaint = Paint()
-      ..color = const Color(0xff38bdf8).withOpacity(0.75)
+      ..color = Colors.white.withOpacity(0.35)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5;
 
@@ -422,11 +411,13 @@ class DeliveryTruckPainter extends CustomPainter {
     canvas.drawCircle(const Offset(48, 18), 10, wheelPaint);
 
     final angle = t * pi * 10;
+
     canvas.drawLine(
       const Offset(-42, 18),
       Offset(-42 + cos(angle) * 8, 18 + sin(angle) * 8),
       wheelPaint,
     );
+
     canvas.drawLine(
       const Offset(48, 18),
       Offset(48 + cos(angle) * 8, 18 + sin(angle) * 8),

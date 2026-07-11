@@ -10,6 +10,8 @@ class TambahBarangPage extends StatefulWidget {
 }
 
 class _TambahBarangPageState extends State<TambahBarangPage> {
+  static const Color accent = Color(0xffff6a00);
+
   final kode = TextEditingController();
   final kodeSup = TextEditingController();
   final nama = TextEditingController();
@@ -52,78 +54,102 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
       merk: merk.text,
       lokasi: lokasi.text,
       qty: qty.text,
-
-  // 🔥 FIX UTAMA DI SINI
+      minStock: stam.text.isEmpty ? "0" : stam.text,
     );
- 
+
     Navigator.pop(context, barang);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xff0f172a),
+      backgroundColor: const Color(0xff050505),
       appBar: AppBar(
         title: const Text("Tambah Barang"),
-        backgroundColor: const Color(0xff020617),
+        backgroundColor: const Color(0xff0b0b0b),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            // FORM
             Expanded(
               flex: 2,
-              child: ListView(
-                children: [
-                  input(kode, "Kode"),
-                  input(kodeSup, "Kode Supplier"),
-                  input(nama, "Nama Barang"),
-                  input(merk, "Merk"),
-                  input(partNo, "Part No",
-                  onChanged: (_) => generateBarcode()),
-                  input(stam, "Stam"),
-                  input(qty, "Qty"),
-                  input(lokasi, "Lokasi"),
-                  input(ket, "Keterangan"),
-
-                  const SizedBox(height: 20),
-
-                  ElevatedButton(
-                    onPressed: simpan,
-                    child: const Text("Simpan"),
-                  ),
-                ],
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: box(),
+                child: ListView(
+                  children: [
+                    title("Barang Masuk", Icons.inventory_2_outlined),
+                    const SizedBox(height: 24),
+                    input(kode, "Kode", onChanged: (_) => generateBarcode()),
+                    input(kodeSup, "Kode Supplier"),
+                    input(nama, "Nama Barang"),
+                    input(merk, "Merk", onChanged: (_) => generateBarcode()),
+                    input(partNo, "Part No", onChanged: (_) => generateBarcode()),
+                    input(stam, "Min Stock"),
+                    input(qty, "Qty"),
+                    input(lokasi, "Lokasi"),
+                    input(ket, "Keterangan"),
+                    const SizedBox(height: 22),
+                    SizedBox(
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: simpan,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                        ),
+                        child: const Text(
+                          "Simpan Barang",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            const SizedBox(width: 40),
-
-            // BARCODE
+            const SizedBox(width: 28),
             Expanded(
-              child: Center(
-                child: barcodeValue.isEmpty
-                    ? const Text(
-                        "Barcode muncul di sini",
-                        style: TextStyle(color: Colors.white54),
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          BarcodeWidget(
-                            barcode: Barcode.code128(),
-                            data: barcodeValue,
-                            color: Colors.white, // 🔥 putih
-                            width: 250,
-                            height: 80,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            barcodeValue,
-                            style: const TextStyle(color: Colors.white54),
-                          ),
-                        ],
-                      ),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: box(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    title("Preview Barcode", Icons.qr_code_2_rounded),
+                    const Spacer(),
+                    Center(
+                      child: barcodeValue.isEmpty
+                          ? const Text(
+                              "Barcode akan muncul otomatis",
+                              style: TextStyle(color: Colors.white54),
+                            )
+                          : Container(
+                              padding: const EdgeInsets.all(22),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: BarcodeWidget(
+                                barcode: Barcode.code128(),
+                                data: barcodeValue,
+                                color: Colors.black,
+                                width: 280,
+                                height: 120,
+                                drawText: true,
+                              ),
+                            ),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
             ),
           ],
@@ -132,10 +158,30 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
     );
   }
 
-  Widget input(TextEditingController controller, String label,
-      {Function(String)? onChanged}) {
+  Widget title(String text, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: accent),
+        const SizedBox(width: 12),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget input(
+    TextEditingController controller,
+    String label, {
+    Function(String)? onChanged,
+  }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: TextField(
         controller: controller,
         onChanged: onChanged,
@@ -144,12 +190,31 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
           labelText: label,
           labelStyle: const TextStyle(color: Colors.white54),
           filled: true,
-          fillColor: const Color(0xff020617),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+          fillColor: Colors.white.withOpacity(0.045),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: accent),
           ),
         ),
       ),
+    );
+  }
+
+  BoxDecoration box() {
+    return BoxDecoration(
+      color: const Color(0xff111111).withOpacity(0.94),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: Colors.white.withOpacity(0.08)),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.45),
+          blurRadius: 36,
+        ),
+      ],
     );
   }
 }

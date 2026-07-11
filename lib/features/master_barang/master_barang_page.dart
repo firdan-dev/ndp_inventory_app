@@ -13,9 +13,9 @@ class MasterBarangPage extends StatefulWidget {
   State<MasterBarangPage> createState() => _MasterBarangPageState();
 }
 
-
-
 class _MasterBarangPageState extends State<MasterBarangPage> {
+  static const Color accentOrange = Color(0xffff6a00);
+
   List<Barang> dataBarang = [];
   List<Barang> filteredBarang = [];
   bool isLoading = true;
@@ -31,7 +31,7 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
   Future<void> fetchBarang() async {
     try {
       final response =
-          await http.get(Uri.parse('http://127.0.0.1:3000/api/products'));
+          await http.get(Uri.parse('https://api.api-nusantaradiesel.tech/api/products'));
 
       final data = jsonDecode(response.body);
 
@@ -70,20 +70,24 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
         padding: const EdgeInsets.all(20),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(16),
           decoration: box(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               headerTop(),
-              const SizedBox(height: 22),
-              searchAndPrint(),
-              const SizedBox(height: 24),
-              tableHeader(),
               const SizedBox(height: 10),
+              searchAndPrint(),
+              const SizedBox(height: 10),
+              tableHeader(),
+              const SizedBox(height: 6),
               Expanded(
                 child: isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: accentOrange,
+                        ),
+                      )
                     : filteredBarang.isEmpty
                         ? const Center(
                             child: Text(
@@ -111,15 +115,13 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xff38bdf8).withOpacity(0.14),
+            color: accentOrange.withOpacity(0.14),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xff38bdf8).withOpacity(0.22),
-            ),
+            border: Border.all(color: accentOrange.withOpacity(0.28)),
           ),
           child: const Icon(
             Icons.inventory_2_outlined,
-            color: Color(0xff38bdf8),
+            color: accentOrange,
           ),
         ),
         const SizedBox(width: 14),
@@ -130,14 +132,14 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
               "Master Barang",
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 24,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
             SizedBox(height: 4),
             Text(
               "Kelola data barang, barcode, lokasi, dan stok",
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: Colors.white54, fontSize: 11),
             ),
           ],
         ),
@@ -161,7 +163,7 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
         ),
         const SizedBox(width: 16),
         SizedBox(
-          height: 52,
+          height: 42,
           child: ElevatedButton.icon(
             onPressed: () {
               final list = filteredBarang.map((e) => e.barcode).toList();
@@ -170,8 +172,9 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
             icon: const Icon(Icons.print_rounded, size: 18),
             label: const Text("Print Semua"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xff38bdf8),
+              backgroundColor: accentOrange,
               foregroundColor: Colors.white,
+              elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 22),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -183,106 +186,157 @@ class _MasterBarangPageState extends State<MasterBarangPage> {
     );
   }
 
-Widget input(TextEditingController controller, String label) {
-  return TextField(
-    controller: controller,
-    style: const TextStyle(color: Colors.white),
-    decoration: inputDecoration().copyWith(
-      labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54),
-    ),
-  );
-}  
+  Widget input(TextEditingController controller, String label) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white),
+      decoration: inputDecoration().copyWith(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54),
+      ),
+    );
+  }
 
   void showEditBarangDialog(Barang item) {
-  final kodeInternal = TextEditingController(text: item.kodeInternal);
-  final kodeSupplier = TextEditingController(text: item.kodeSupplier);
-  final namaBarang = TextEditingController(text: item.namaBarang);
-  final partNo = TextEditingController(text: item.partNo);
-  final merk = TextEditingController(text: item.merk);
-  final lokasi = TextEditingController(text: item.lokasi);
-  final minStock = TextEditingController(text: item.minStock);
+    final kodeInternal = TextEditingController(text: item.kodeInternal);
+    final kodeSupplier = TextEditingController(text: item.kodeSupplier);
+    final namaBarang = TextEditingController(text: item.namaBarang);
+    final partNo = TextEditingController(text: item.partNo);
+    final merk = TextEditingController(text: item.merk);
+    final lokasi = TextEditingController(text: item.lokasi);
+    final minStock = TextEditingController(text: item.minStock);
 
-  showDialog(
-    context: context,
-    builder: (_) {
-      return AlertDialog(
-        backgroundColor: const Color(0xff1e293b),
-        title: const Text(
-          "Edit Barang",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: SizedBox(
-          width: 520,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                input(kodeInternal, "Kode Internal"),
-                const SizedBox(height: 10),
-                input(kodeSupplier, "Kode Supplier"),
-                const SizedBox(height: 10),
-                input(namaBarang, "Nama Barang"),
-                const SizedBox(height: 10),
-                input(partNo, "Part No"),
-                const SizedBox(height: 10),
-                input(merk, "Merk"),
-                const SizedBox(height: 10),
-                input(lokasi, "Lokasi"),
-                const SizedBox(height: 10),
-                input(minStock, "Min Stock"),
-              ],
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          backgroundColor: const Color(0xff111111),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: BorderSide(color: accentOrange.withOpacity(0.18)),
+          ),
+          title: const Text(
+            "Edit Barang",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  input(kodeInternal, "Kode Internal"),
+                  const SizedBox(height: 10),
+                  input(kodeSupplier, "Kode Supplier"),
+                  const SizedBox(height: 10),
+                  input(namaBarang, "Nama Barang"),
+                  const SizedBox(height: 10),
+                  input(partNo, "Part No"),
+                  const SizedBox(height: 10),
+                  input(merk, "Merk"),
+                  const SizedBox(height: 10),
+                  input(lokasi, "Lokasi"),
+                  const SizedBox(height: 10),
+                  input(minStock, "Min Stock"),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final res = await http.put(
-                Uri.parse('http://127.0.0.1:3000/api/products/${item.id}'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
-                  "kode_internal": kodeInternal.text,
-                  "kode_supplier": kodeSupplier.text,
-                  "nama_barang": namaBarang.text,
-                  "part_no": partNo.text,
-                  "merk": merk.text,
-                  "lokasi": lokasi.text,
-                  "min_stock": int.tryParse(minStock.text) ?? 5,
-                }),
-              );
-
-              if (res.statusCode == 200) {
-                Navigator.pop(context);
-                fetchBarang();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Barang berhasil diupdate")),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Batal",
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentOrange,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final res = await http.put(
+                  Uri.parse('https://api.api-nusantaradiesel.tech/api/products/${item.id}'),
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode({
+                    "kode_internal": kodeInternal.text,
+                    "kode_supplier": kodeSupplier.text,
+                    "nama_barang": namaBarang.text,
+                    "part_no": partNo.text,
+                    "merk": merk.text,
+                    "lokasi": lokasi.text,
+                    "min_stock": int.tryParse(minStock.text) ?? 5,
+                  }),
                 );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Gagal update barang")),
-                );
-              }
-            },
-            child: const Text("Simpan"),
-          ),
-        ],
-      );
-    },
-  );
-}
+
+                debugPrint("AFTER FETCH:");
+                  for (final b in dataBarang) {
+                    if (b.id == item.id) {
+                      debugPrint("${b.id} | ${b.namaBarang} | ${b.partNo}");
+                    }
+                  }
+
+                  debugPrint("EDIT ID: ${item.id}");
+                  debugPrint("STATUS: ${res.statusCode}");
+                  debugPrint("BODY: ${res.body}");
+
+                    if (res.statusCode == 200) {
+                    final updatedItem = Barang(
+                      id: item.id,
+                      kodeInternal: kodeInternal.text,
+                      kodeSupplier: kodeSupplier.text,
+                      namaBarang: namaBarang.text,
+                      partNo: partNo.text,
+                      merk: merk.text,
+                      lokasi: lokasi.text,
+                      minStock: minStock.text,
+                      qty: item.qty,
+                      barcode: item.barcode,
+                    );
+
+                    setState(() {
+                      final index = dataBarang.indexWhere((e) => e.id == item.id);
+                      if (index != -1) {
+                        dataBarang[index] = updatedItem;
+                      }
+
+                      final filteredIndex = filteredBarang.indexWhere((e) => e.id == item.id);
+                      if (filteredIndex != -1) {
+                        filteredBarang[filteredIndex] = updatedItem;
+                      }
+                    });
+
+                    if (!mounted) return;
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Barang berhasil diupdate")),
+                    );
+                  }
+                
+                else {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Gagal update barang")),
+                  );
+                }
+              },
+              child: const Text("Simpan"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget tableHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.035),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withOpacity(0.06)),
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accentOrange.withOpacity(0.10)),
       ),
       child: Row(
         children: [
@@ -291,9 +345,9 @@ Widget input(TextEditingController controller, String label) {
           header("Nama", 4),
           header("Merk", 2),
           header("Part No", 3),
-          header("Qty", 2),
+          header("Qty", 1),
           header("Lokasi", 3),
-          header("Aksi", 3, align: TextAlign.center),
+          header("Aksi", 2, align: TextAlign.center),
         ],
       ),
     );
@@ -310,22 +364,27 @@ Widget input(TextEditingController controller, String label) {
           onExit: (_) => setHover(() => hover = false),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 180),
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
             decoration: BoxDecoration(
-              color: hover
-                  ? Colors.white.withOpacity(0.075)
-                  : Colors.white.withOpacity(index % 2 == 0 ? 0.025 : 0.045),
+              gradient: LinearGradient(
+                colors: [
+                  hover
+                      ? accentOrange.withOpacity(0.10)
+                      : Colors.white.withOpacity(index % 2 == 0 ? 0.025 : 0.04),
+                  Colors.white.withOpacity(0.015),
+                ],
+              ),
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: hover
-                    ? const Color(0xff38bdf8).withOpacity(0.35)
+                    ? accentOrange.withOpacity(0.28)
                     : Colors.white.withOpacity(0.04),
               ),
               boxShadow: hover
                   ? [
                       BoxShadow(
-                        color: const Color(0xff38bdf8).withOpacity(0.14),
+                        color: accentOrange.withOpacity(0.16),
                         blurRadius: 24,
                       ),
                     ]
@@ -353,16 +412,16 @@ Widget input(TextEditingController controller, String label) {
     final bool low = qty <= 10;
 
     return Expanded(
-      flex: 2,
+      flex: 1,
       child: Align(
         alignment: Alignment.centerLeft,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: low
                 ? Colors.red.withOpacity(0.16)
                 : Colors.green.withOpacity(0.14),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: low
                   ? Colors.red.withOpacity(0.35)
@@ -373,6 +432,7 @@ Widget input(TextEditingController controller, String label) {
             qty.toString(),
             style: TextStyle(
               color: low ? Colors.redAccent : Colors.greenAccent,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -383,68 +443,62 @@ Widget input(TextEditingController controller, String label) {
 
   Widget actionButtons(Barang item) {
     return Expanded(
-      flex: 3,
+      flex: 2,
       child: Center(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-        iconAction(Icons.edit_rounded, Colors.orangeAccent, () {
-          showEditBarangDialog(item);
-        }),
+            iconAction(Icons.edit_rounded, Colors.orangeAccent, () {
+              showEditBarangDialog(item);
+            }),
+            iconAction(Icons.qr_code_2_rounded, Colors.white, () {
+              final clean = item.barcode
+                  .replaceAll("-", "")
+                  .replaceAll(" ", "")
+                  .toUpperCase();
 
-        iconAction(Icons.qr_code_2_rounded, Colors.white, () {
-          final clean = item.barcode
-              .replaceAll("-", "")
-              .replaceAll(" ", "")
-              .toUpperCase();
-
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              backgroundColor: Colors.transparent,
-              content: Container(
-                padding: const EdgeInsets.all(20),
-                color: Colors.white,
-                child: BarcodeWidget(
-                  barcode: Barcode.code128(),
-                  data: clean,
-                  width: 280,
-                  height: 120,
-                  color: Colors.black,
-                  drawText: true,
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  backgroundColor: Colors.transparent,
+                  content: Container(
+                    padding: const EdgeInsets.all(20),
+                    color: Colors.white,
+                    child: BarcodeWidget(
+                      barcode: Barcode.code128(),
+                      data: clean,
+                      width: 280,
+                      height: 120,
+                      color: Colors.black,
+                      drawText: true,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }),
-
-        iconAction(Icons.print_rounded, Colors.greenAccent, () {
-          printThermal(item.barcode);
-        }),
-
-
-               ],
-              ),
-            ),
-          );
-        }
-
-
+              );
+            }),
+            iconAction(Icons.print_rounded, Colors.greenAccent, () {
+              printThermal(item.barcode);
+            }),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget iconAction(IconData icon, Color color, VoidCallback onTap) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: color.withOpacity(0.18)),
           ),
-          child: Icon(icon, color: color, size: 18),
+          child: Icon(icon, color: color, size: 14),
         ),
       ),
     );
@@ -454,12 +508,13 @@ Widget input(TextEditingController controller, String label) {
     return Expanded(
       flex: flex,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Text(
           text,
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: bold ? Colors.white : Colors.white70,
+            fontSize: 12,
             fontWeight: bold ? FontWeight.w600 : FontWeight.normal,
           ),
         ),
@@ -475,8 +530,8 @@ Widget input(TextEditingController controller, String label) {
         child: Text(
           text,
           textAlign: align,
-          style: const TextStyle(
-            color: Colors.white54,
+          style: TextStyle(
+            color: accentOrange.withOpacity(0.85),
             fontSize: 11,
             fontWeight: FontWeight.w700,
           ),
@@ -490,17 +545,19 @@ Widget input(TextEditingController controller, String label) {
       borderRadius: BorderRadius.circular(28),
       gradient: LinearGradient(
         colors: [
-          Colors.white.withOpacity(0.08),
-          Colors.white.withOpacity(0.025),
+          const Color(0xff0b0b0b),
+          const Color(0xff151515),
         ],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
-      border: Border.all(color: Colors.white.withOpacity(0.10)),
+      border: Border.all(
+        color: Colors.white.withOpacity(0.08),
+      ),
       boxShadow: [
         BoxShadow(
           color: const Color(0xff38bdf8).withOpacity(0.08),
-          blurRadius: 45,
+          blurRadius: 40,
         ),
       ],
     );
@@ -508,17 +565,26 @@ Widget input(TextEditingController controller, String label) {
 
   InputDecoration inputDecoration() {
     return InputDecoration(
-      hintStyle: const TextStyle(color: Colors.white38),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(
+        vertical: 10,
+        horizontal: 12,
+      ),
+      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
       filled: true,
       fillColor: Colors.white.withOpacity(0.045),
-      prefixIconColor: Colors.white54,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.10)),
+      prefixIconColor: accentOrange,
+      prefixIconConstraints: const BoxConstraints(
+        minWidth: 36,
+        minHeight: 36,
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(18),
-        borderSide: const BorderSide(color: Color(0xff38bdf8)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: accentOrange.withOpacity(0.12)),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(12)),
+        borderSide: BorderSide(color: accentOrange),
       ),
     );
   }
