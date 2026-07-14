@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'barang_model.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class TambahBarangPage extends StatefulWidget {
   const TambahBarangPage({super.key});
@@ -59,6 +62,63 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
 
     Navigator.pop(context, barang);
   }
+
+
+  Future<void> printBarcodeLabel() async {
+  final value = barcodeValue.trim();
+
+  if (value.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Barcode belum tersedia')),
+    );
+    return;
+  }
+
+  final pdf = pw.Document();
+
+  final labelFormat = PdfPageFormat(
+    40 * PdfPageFormat.mm,
+    12 * PdfPageFormat.mm,
+    marginAll: 0,
+  );
+
+  pdf.addPage(
+    pw.Page(
+      pageFormat: labelFormat,
+      margin: pw.EdgeInsets.zero,
+      build: (_) {
+        return pw.Container(
+          width: 40 * PdfPageFormat.mm,
+          height: 12 * PdfPageFormat.mm,
+          color: PdfColors.white,
+          padding: const pw.EdgeInsets.symmetric(
+            horizontal: 3,
+            vertical: 2,
+          ),
+          child: pw.BarcodeWidget(
+            barcode: pw.Barcode.code128(),
+            data: value,
+            color: PdfColors.black,
+            drawText: true,
+            textStyle: const pw.TextStyle(
+              fontSize: 6,
+              color: PdfColors.black,
+            ),
+          ),
+        );
+      },
+    ),
+  );
+
+  await Printing.layoutPdf(
+    name: 'barcode_$value.pdf',
+    format: labelFormat,
+    dynamicLayout: false,
+    onLayout: (_) async => pdf.save(),
+  );
+}
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +192,7 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
                               style: TextStyle(color: Colors.white54),
                             )
                           : Container(
-                              padding: const EdgeInsets.all(22),
+                              padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(18),
@@ -141,11 +201,28 @@ class _TambahBarangPageState extends State<TambahBarangPage> {
                                 barcode: Barcode.code128(),
                                 data: barcodeValue,
                                 color: Colors.black,
-                                width: 280,
-                                height: 120,
+                                backgroundColor: Colors.white,
+                                width: 320,
+                                height: 96,
                                 drawText: true,
                               ),
                             ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: barcodeValue.isEmpty ? null : printBarcodeLabel,
+                        icon: const Icon(Icons.print_rounded),
+                        label: const Text("Print Label 40 × 12 mm"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: accent,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
                     ),
                     const Spacer(),
                   ],
