@@ -2,23 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../layout/main_layout.dart';
+import '../../layout/mobile_main_layout.dart';
 
-class LoginSuccessPage extends StatefulWidget {
+class LoginSuccessMobilePage extends StatefulWidget {
   final String username;
   final String role;
 
-  const LoginSuccessPage({
+  const LoginSuccessMobilePage({
     super.key,
     required this.username,
     required this.role,
   });
 
   @override
-  State<LoginSuccessPage> createState() => _LoginSuccessPageState();
+  State<LoginSuccessMobilePage> createState() =>
+      _LoginSuccessMobilePageState();
 }
 
-class _LoginSuccessPageState extends State<LoginSuccessPage>
+class _LoginSuccessMobilePageState extends State<LoginSuccessMobilePage>
     with TickerProviderStateMixin {
   static const Color accent = Color(0xffff6a00);
 
@@ -170,7 +171,7 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
       PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 650),
         pageBuilder: (_, animation, secondaryAnimation) {
-          return MainLayout(role: widget.role);
+          return MobileMainLayout(role: widget.role);
         },
         transitionsBuilder: (
             context,
@@ -235,36 +236,38 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
         child: Stack(
           children: [
             Positioned(
-              top: -180,
-              right: -140,
+              top: -150,
+              right: -130,
               child: _buildBlurCircle(
-                size: 360,
+                size: 290,
                 opacity: 0.055,
               ),
             ),
             Positioned(
-              bottom: -200,
-              left: -150,
+              bottom: -170,
+              left: -140,
               child: _buildBlurCircle(
-                size: 390,
+                size: 320,
                 opacity: 0.04,
               ),
             ),
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 40,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSuccessIcon(),
-                    const SizedBox(height: 42),
-                    _buildWelcomeText(),
-                    const SizedBox(height: 46),
-                    _buildLoadingSection(),
-                  ],
+            SafeArea(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 28,
+                    vertical: 32,
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _buildSuccessIcon(),
+                      const SizedBox(height: 38),
+                      _buildWelcomeText(),
+                      const SizedBox(height: 42),
+                      _buildLoadingSection(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -293,7 +296,7 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
                   child: ScaleTransition(
                     scale: _ringScale,
                     child: CustomPaint(
-                      size: const Size(175, 175),
+                      size: const Size(150, 150),
                       painter: SuccessRingPainter(
                         progress: _ringController.value,
                       ),
@@ -301,8 +304,8 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
                   ),
                 ),
                 Container(
-                  width: 118,
-                  height: 118,
+                  width: 104,
+                  height: 104,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: accent.withOpacity(0.12),
@@ -313,15 +316,15 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
                     boxShadow: [
                       BoxShadow(
                         color: accent.withOpacity(0.20),
-                        blurRadius: 50,
-                        spreadRadius: 4,
+                        blurRadius: 45,
+                        spreadRadius: 3,
                       ),
                     ],
                   ),
                   child: const Icon(
                     Icons.check_rounded,
                     color: accent,
-                    size: 66,
+                    size: 58,
                   ),
                 ),
               ],
@@ -340,33 +343,33 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
         child: Column(
           children: [
             const Text(
-              'LOGIN BERHASIL',
+              'Login berhasil',
               style: TextStyle(
                 color: accent,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.6,
+                letterSpacing: 1.4,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Text(
               'Selamat datang,\n${widget.username}',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 34,
-                height: 1.22,
+                fontSize: 29,
+                height: 1.25,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+                letterSpacing: -0.4,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 13),
             const Text(
               'NDP Inventory siap digunakan',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white54,
-                fontSize: 15,
+                fontSize: 14,
               ),
             ),
           ],
@@ -381,8 +384,11 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
       child: Column(
         children: [
           Container(
-            width: 340,
-            height: 7,
+            width: double.infinity,
+            constraints: const BoxConstraints(
+              maxWidth: 300,
+            ),
+            height: 6,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.07),
@@ -415,7 +421,7 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
               },
             ),
           ),
-          const SizedBox(height: 17),
+          const SizedBox(height: 16),
           AnimatedBuilder(
             animation: _progress,
             builder: (_, __) {
@@ -424,7 +430,7 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
               String message;
 
               if (progress < 0.35) {
-                message = 'Menyiapkan sesi pengguna...';
+                message = 'Menyiapkan sesi...';
               } else if (progress < 0.70) {
                 message = 'Memuat data aplikasi...';
               } else if (progress < 0.96) {
@@ -440,7 +446,7 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
                   key: ValueKey(message),
                   style: const TextStyle(
                     color: Colors.white38,
-                    fontSize: 13,
+                    fontSize: 12,
                   ),
                 ),
               );
@@ -465,8 +471,8 @@ class _LoginSuccessPageState extends State<LoginSuccessPage>
           boxShadow: [
             BoxShadow(
               color: accent.withOpacity(opacity * 1.7),
-              blurRadius: 140,
-              spreadRadius: 48,
+              blurRadius: 130,
+              spreadRadius: 42,
             ),
           ],
         ),
@@ -526,7 +532,7 @@ class SuccessRingPainter extends CustomPainter {
 
     canvas.drawCircle(
       center,
-      radius - 15,
+      radius - 13,
       secondRingPaint,
     );
   }

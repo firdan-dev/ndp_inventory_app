@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:barcode_widget/barcode_widget.dart';
 
-import 'barang_model.dart';
+import '../../models/barang_model.dart';
 import '../../utils/print_helper.dart';
 
 class MasterBarangPage extends StatefulWidget {

@@ -1,41 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'core/auth_storage.dart';
 import 'features/auth/login_page.dart';
 import 'features/layout/main_layout.dart';
-import 'package:intl/date_symbol_data_local.dart';  
+import 'mobile_foundation/auth/pages/login_mobile_page.dart';
+import 'mobile_foundation/layout/mobile_main_layout.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('id_ID', null);
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future<Widget> _getStartPage() async {
-    final user = await AuthStorage.getUser();
-
-    if (user != null) {
-      return MainLayout(role: user['role']);
-    } else {
-      return const LoginPage();
-    }
+  Future<Map<String, dynamic>?> _getUser() async {
+    return AuthStorage.getUser();
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'NDP Inventory',
       debugShowCheckedModeBanner: false,
-      home: FutureBuilder(
-        future: _getStartPage(),
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xffff6a00),
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xff050505),
+        useMaterial3: true,
+      ),
+      home: FutureBuilder<Map<String, dynamic>?>(
+        future: _getUser(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState != ConnectionState.done) {
             return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xffff6a00),
+                ),
+              ),
             );
           }
-          return snapshot.data!;
+
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile =
+                  Theme.of(context).platform == TargetPlatform.android ||
+                      constraints.maxWidth < 1000;
+              final user = snapshot.data;
+
+              if (user == null) {
+                return isMobile
+                    ? const LoginMobilePage()
+                    : const LoginPage();
+              }
+
+              final role = user['role']?.toString() ?? '';
+
+              return isMobile
+                  ? MobileMainLayout(role: role)
+                  : MainLayout(role: role);
+            },
+          );
         },
       ),
     );
