@@ -1,6 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:ndp_inventory_app/mobile_foundation/transaction/pages/barang_masuk_mobile_page.dart';
+import 'package:ndp_inventory_app/mobile_foundation/transaction/pages/surat_jalan_mobile_page.dart';
 
 class TransactionMobilePage extends StatefulWidget {
   final String role;
@@ -18,6 +20,7 @@ class TransactionMobilePage extends StatefulWidget {
 class _TransactionMobilePageState
     extends State<TransactionMobilePage> {
   static const Color accent = Color(0xffff6a00);
+  static const Color background = Color(0xff050505);
 
   final TextEditingController _searchController =
   TextEditingController();
@@ -28,32 +31,20 @@ class _TransactionMobilePageState
     _TransactionMenuItem(
       title: 'Barang Masuk',
       subtitle: 'Catat dan kelola stok barang masuk',
-      icon: Icons.move_to_inbox_outlined,
+      icon: Icons.add_box_outlined,
       color: Color(0xff43d17b),
-    ),
-    _TransactionMenuItem(
-      title: 'Barang Keluar',
-      subtitle: 'Catat dan kelola stok barang keluar',
-      icon: Icons.outbox_outlined,
-      color: Color(0xff5ea0ff),
-    ),
-    _TransactionMenuItem(
-      title: 'Mutasi Barang',
-      subtitle: 'Pindahkan stok barang antar lokasi',
-      icon: Icons.swap_horiz_rounded,
-      color: Color(0xffb58cff),
-    ),
-    _TransactionMenuItem(
-      title: 'Stock Opname',
-      subtitle: 'Cocokkan stok fisik dengan sistem',
-      icon: Icons.fact_check_outlined,
-      color: Color(0xffffbd59),
     ),
     _TransactionMenuItem(
       title: 'Surat Jalan',
       subtitle: 'Kelola dokumen dan proses pengiriman',
       icon: Icons.local_shipping_outlined,
-      color: Color(0xffff7f7f),
+      color: Color(0xff5ea0ff),
+    ),
+    _TransactionMenuItem(
+      title: 'History Surat Jalan',
+      subtitle: 'Lihat riwayat dan status surat jalan',
+      icon: Icons.history_rounded,
+      color: Color(0xffffbd59),
     ),
   ];
 
@@ -81,7 +72,7 @@ class _TransactionMobilePageState
     final menus = _filteredMenus();
 
     return Scaffold(
-      backgroundColor: const Color(0xff050505),
+      backgroundColor: background,
       body: Stack(
         children: [
           Positioned(
@@ -210,13 +201,14 @@ class _TransactionMobilePageState
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 28,
-                            fontWeight: FontWeight.w800,
+                            fontWeight:
+                            FontWeight.w800,
                             letterSpacing: -0.5,
                           ),
                         ),
                         SizedBox(height: 6),
                         Text(
-                          'Kelola seluruh transaksi gudang',
+                          'Kelola transaksi barang masuk dan surat jalan',
                           style: TextStyle(
                             color: Colors.white54,
                             fontSize: 12,
@@ -237,19 +229,23 @@ class _TransactionMobilePageState
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius:
+                      BorderRadius.circular(20),
                       border: Border.all(
-                        color: accent.withOpacity(0.30),
+                        color:
+                        accent.withOpacity(0.30),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: accent.withOpacity(0.18),
+                          color:
+                          accent.withOpacity(0.18),
                           blurRadius: 24,
                         ),
                       ],
                     ),
                     child: const Icon(
-                      Icons.swap_horizontal_circle_rounded,
+                      Icons
+                          .swap_horizontal_circle_rounded,
                       color: accent,
                       size: 31,
                     ),
@@ -269,8 +265,10 @@ class _TransactionMobilePageState
                   const SizedBox(width: 10),
                   Expanded(
                     child: _buildInfoChip(
-                      icon: Icons.verified_user_outlined,
-                      label: _formatRole(widget.role),
+                      icon:
+                      Icons.verified_user_outlined,
+                      label:
+                      _formatRole(widget.role),
                     ),
                   ),
                 ],
@@ -288,7 +286,9 @@ class _TransactionMobilePageState
   }) {
     return Container(
       height: 42,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.16),
         borderRadius: BorderRadius.circular(15),
@@ -297,7 +297,8 @@ class _TransactionMobilePageState
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment:
+        MainAxisAlignment.center,
         children: [
           Icon(
             icon,
@@ -309,11 +310,13 @@ class _TransactionMobilePageState
             child: Text(
               label,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              overflow:
+              TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white70,
                 fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontWeight:
+                FontWeight.w600,
               ),
             ),
           ),
@@ -325,7 +328,8 @@ class _TransactionMobilePageState
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
-      textInputAction: TextInputAction.search,
+      textInputAction:
+      TextInputAction.search,
       style: const TextStyle(
         color: Colors.white,
         fontSize: 14,
@@ -336,7 +340,8 @@ class _TransactionMobilePageState
         });
       },
       decoration: InputDecoration(
-        hintText: 'Cari menu transaksi...',
+        hintText:
+        'Cari menu transaksi...',
         hintStyle: const TextStyle(
           color: Colors.white30,
           fontSize: 13,
@@ -345,12 +350,15 @@ class _TransactionMobilePageState
           Icons.search_rounded,
           color: Colors.white38,
         ),
-        suffixIcon: _searchQuery.isEmpty
+        suffixIcon:
+        _searchQuery.isEmpty
             ? null
             : IconButton(
-          tooltip: 'Hapus pencarian',
+          tooltip:
+          'Hapus pencarian',
           onPressed: () {
-            _searchController.clear();
+            _searchController
+                .clear();
 
             setState(() {
               _searchQuery = '';
@@ -358,25 +366,38 @@ class _TransactionMobilePageState
           },
           icon: const Icon(
             Icons.close_rounded,
-            color: Colors.white38,
+            color:
+            Colors.white38,
           ),
         ),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.045),
-        contentPadding: const EdgeInsets.symmetric(
+        fillColor:
+        Colors.white.withOpacity(
+          0.045,
+        ),
+        contentPadding:
+        const EdgeInsets.symmetric(
           horizontal: 18,
           vertical: 17,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(19),
+        enabledBorder:
+        OutlineInputBorder(
+          borderRadius:
+          BorderRadius.circular(19),
           borderSide: BorderSide(
-            color: Colors.white.withOpacity(0.08),
+            color:
+            Colors.white.withOpacity(
+              0.08,
+            ),
           ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(19),
+        focusedBorder:
+        OutlineInputBorder(
+          borderRadius:
+          BorderRadius.circular(19),
           borderSide: BorderSide(
-            color: accent.withOpacity(0.60),
+            color:
+            accent.withOpacity(0.60),
             width: 1.3,
           ),
         ),
@@ -391,14 +412,16 @@ class _TransactionMobilePageState
       children: [
         const Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
               Text(
                 'Menu Transaksi',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
-                  fontWeight: FontWeight.w700,
+                  fontWeight:
+                  FontWeight.w700,
                 ),
               ),
               SizedBox(height: 4),
@@ -413,15 +436,19 @@ class _TransactionMobilePageState
           ),
         ),
         Container(
-          padding: const EdgeInsets.symmetric(
+          padding:
+          const EdgeInsets.symmetric(
             horizontal: 11,
             vertical: 6,
           ),
           decoration: BoxDecoration(
-            color: accent.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(20),
+            color:
+            accent.withOpacity(0.10),
+            borderRadius:
+            BorderRadius.circular(20),
             border: Border.all(
-              color: accent.withOpacity(0.16),
+              color:
+              accent.withOpacity(0.16),
             ),
           ),
           child: Text(
@@ -429,7 +456,8 @@ class _TransactionMobilePageState
             style: const TextStyle(
               color: accent,
               fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontWeight:
+              FontWeight.w700,
             ),
           ),
         ),
@@ -446,14 +474,24 @@ class _TransactionMobilePageState
             (index) {
           final item = menus[index];
 
-          return TweenAnimationBuilder<double>(
+          return TweenAnimationBuilder<
+              double>(
             key: ValueKey(item.title),
-            tween: Tween(begin: 0, end: 1),
+            tween: Tween(
+              begin: 0,
+              end: 1,
+            ),
             duration: Duration(
-              milliseconds: 320 + (index * 70),
+              milliseconds:
+              320 + (index * 70),
             ),
             curve: Curves.easeOutCubic,
-            builder: (context, value, child) {
+            builder:
+                (
+                context,
+                value,
+                child,
+                ) {
               return Opacity(
                 opacity: value,
                 child: Transform.translate(
@@ -467,11 +505,16 @@ class _TransactionMobilePageState
             },
             child: Padding(
               padding: EdgeInsets.only(
-                bottom: index < menus.length - 1 ? 11 : 0,
+                bottom:
+                index < menus.length - 1
+                    ? 11
+                    : 0,
               ),
-              child: _TransactionGlassCard(
+              child:
+              _TransactionGlassCard(
                 item: item,
-                onTap: () => _openMenu(item),
+                onTap: () =>
+                    _openMenu(item),
               ),
             ),
           );
@@ -480,20 +523,39 @@ class _TransactionMobilePageState
     );
   }
 
-  void _openMenu(_TransactionMenuItem item) {
+  void _openMenu(
+      _TransactionMenuItem item,
+      ) {
     FocusScope.of(context).unfocus();
+
+    Widget targetPage;
+
+    if (item.title == 'Barang Masuk') {
+      targetPage = const BarangMasukMobilePage();
+    }  if (item.title == 'Surat Jalan') {
+      targetPage = const SuratJalanMobilePage();
+    } else {
+      targetPage = _TransactionPlaceholderPage(
+        title: item.title,
+        subtitle: item.subtitle,
+        icon: item.icon,
+        color: item.color,
+      );
+    }
+
+
 
     Navigator.of(context).push(
       PageRouteBuilder(
-        transitionDuration:
-        const Duration(milliseconds: 380),
-        pageBuilder: (_, animation, secondaryAnimation) {
-          return _TransactionPlaceholderPage(
-            title: item.title,
-            subtitle: item.subtitle,
-            icon: item.icon,
-            color: item.color,
-          );
+        transitionDuration: const Duration(
+          milliseconds: 380,
+        ),
+        pageBuilder: (
+            _,
+            animation,
+            secondaryAnimation,
+            ) {
+          return targetPage;
         },
         transitionsBuilder: (
             context,
@@ -507,7 +569,10 @@ class _TransactionMobilePageState
           );
 
           final slide = Tween<Offset>(
-            begin: const Offset(0.05, 0),
+            begin: const Offset(
+              0.05,
+              0,
+            ),
             end: Offset.zero,
           ).animate(
             CurvedAnimation(
@@ -530,17 +595,26 @@ class _TransactionMobilePageState
 
   Widget _buildEmptySearch() {
     return Padding(
-      padding: const EdgeInsets.only(top: 75),
+      padding:
+      const EdgeInsets.only(
+        top: 75,
+      ),
       child: Column(
         children: [
           Container(
             width: 78,
             height: 78,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.04),
+              color:
+              Colors.white.withOpacity(
+                0.04,
+              ),
               shape: BoxShape.circle,
               border: Border.all(
-                color: Colors.white.withOpacity(0.05),
+                color:
+                Colors.white.withOpacity(
+                  0.05,
+                ),
               ),
             ),
             child: const Icon(
@@ -555,7 +629,8 @@ class _TransactionMobilePageState
             style: TextStyle(
               color: Colors.white70,
               fontSize: 16,
-              fontWeight: FontWeight.w700,
+              fontWeight:
+              FontWeight.w700,
             ),
           ),
           const SizedBox(height: 7),
@@ -571,29 +646,38 @@ class _TransactionMobilePageState
     );
   }
 
-  String _formatRole(String role) {
+  String _formatRole(
+      String role,
+      ) {
     if (role.trim().isEmpty) {
       return 'User';
     }
 
-    final spaced = role.replaceAllMapped(
-      RegExp(r'([a-z])([A-Z])'),
+    final spaced =
+    role.replaceAllMapped(
+      RegExp(
+        r'([a-z])([A-Z])',
+      ),
           (match) =>
       '${match.group(1)} ${match.group(2)}',
     );
 
     return spaced
         .split(' ')
-        .where((word) => word.isNotEmpty)
+        .where(
+          (word) => word.isNotEmpty,
+    )
         .map(
           (word) =>
-      '${word[0].toUpperCase()}${word.substring(1).toLowerCase()}',
+      '${word[0].toUpperCase()}'
+          '${word.substring(1).toLowerCase()}',
     )
         .join(' ');
   }
 }
 
-class _TransactionGlassCard extends StatefulWidget {
+class _TransactionGlassCard
+    extends StatefulWidget {
   final _TransactionMenuItem item;
   final VoidCallback onTap;
 
@@ -603,7 +687,8 @@ class _TransactionGlassCard extends StatefulWidget {
   });
 
   @override
-  State<_TransactionGlassCard> createState() =>
+  State<_TransactionGlassCard>
+  createState() =>
       _TransactionGlassCardState();
 }
 
@@ -611,7 +696,9 @@ class _TransactionGlassCardState
     extends State<_TransactionGlassCard> {
   bool _pressed = false;
 
-  void _setPressed(bool value) {
+  void _setPressed(
+      bool value,
+      ) {
     if (!mounted) return;
 
     setState(() {
@@ -620,166 +707,237 @@ class _TransactionGlassCardState
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     return GestureDetector(
-      onTapDown: (_) => _setPressed(true),
-      onTapUp: (_) => _setPressed(false),
-      onTapCancel: () => _setPressed(false),
+      onTapDown: (_) =>
+          _setPressed(true),
+      onTapUp: (_) =>
+          _setPressed(false),
+      onTapCancel: () =>
+          _setPressed(false),
       child: AnimatedScale(
-        scale: _pressed ? 0.975 : 1,
-        duration: const Duration(milliseconds: 120),
+        scale:
+        _pressed ? 0.975 : 1,
+        duration:
+        const Duration(
+          milliseconds: 120,
+        ),
         curve: Curves.easeOut,
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius:
+          BorderRadius.circular(22),
           child: BackdropFilter(
-            filter: ImageFilter.blur(
+            filter:
+            ImageFilter.blur(
               sigmaX: 14,
               sigmaY: 14,
             ),
             child: Material(
-              color: Colors.transparent,
+              color:
+              Colors.transparent,
               child: InkWell(
                 onTap: widget.onTap,
-                borderRadius: BorderRadius.circular(22),
-                child: AnimatedContainer(
+                borderRadius:
+                BorderRadius.circular(
+                  22,
+                ),
+                child:
+                AnimatedContainer(
                   duration:
-                  const Duration(milliseconds: 180),
+                  const Duration(
+                    milliseconds: 180,
+                  ),
                   height: 88,
-                  padding: const EdgeInsets.symmetric(
+                  padding:
+                  const EdgeInsets
+                      .symmetric(
                     horizontal: 14,
                     vertical: 12,
                   ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
+                  decoration:
+                  BoxDecoration(
+                    gradient:
+                    LinearGradient(
                       colors: [
-                        widget.item.color.withOpacity(
-                          _pressed ? 0.15 : 0.08,
+                        widget.item.color
+                            .withOpacity(
+                          _pressed
+                              ? 0.15
+                              : 0.08,
                         ),
-                        Colors.white.withOpacity(
-                          _pressed ? 0.07 : 0.045,
+                        Colors.white
+                            .withOpacity(
+                          _pressed
+                              ? 0.07
+                              : 0.045,
                         ),
-                        Colors.white.withOpacity(0.025),
+                        Colors.white
+                            .withOpacity(
+                          0.025,
+                        ),
                       ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      begin:
+                      Alignment.topLeft,
+                      end:
+                      Alignment
+                          .bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius:
+                    BorderRadius.circular(
+                      22,
+                    ),
                     border: Border.all(
-                      color: _pressed
-                          ? widget.item.color
-                          .withOpacity(0.38)
-                          : Colors.white.withOpacity(0.09),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _pressed
-                            ? widget.item.color
-                            .withOpacity(0.12)
-                            : Colors.black
-                            .withOpacity(0.20),
-                        blurRadius: _pressed ? 24 : 16,
-                        offset: const Offset(0, 9),
+                      color:
+                      _pressed
+                          ? widget.item
+                          .color
+                          .withOpacity(
+                        0.38,
+                      )
+                          : Colors.white
+                          .withOpacity(
+                        0.09,
                       ),
-                    ],
+                    ),
                   ),
                   child: Row(
                     children: [
                       Container(
                         width: 58,
                         height: 58,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              widget.item.color
-                                  .withOpacity(0.34),
-                              widget.item.color
-                                  .withOpacity(0.12),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                        decoration:
+                        BoxDecoration(
+                          color:
+                          widget.item
+                              .color
+                              .withOpacity(
+                            0.15,
                           ),
                           borderRadius:
-                          BorderRadius.circular(18),
-                          border: Border.all(
-                            color: widget.item.color
-                                .withOpacity(0.24),
+                          BorderRadius
+                              .circular(
+                            18,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: widget.item.color
-                                  .withOpacity(0.13),
-                              blurRadius: 18,
+                          border:
+                          Border.all(
+                            color:
+                            widget.item
+                                .color
+                                .withOpacity(
+                              0.22,
                             ),
-                          ],
+                          ),
                         ),
                         child: Icon(
-                          widget.item.icon,
-                          color: widget.item.color,
+                          widget
+                              .item
+                              .icon,
+                          color:
+                          widget
+                              .item
+                              .color,
                           size: 27,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(
+                        width: 14,
+                      ),
                       Expanded(
                         child: Column(
                           mainAxisAlignment:
-                          MainAxisAlignment.center,
+                          MainAxisAlignment
+                              .center,
                           crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                          CrossAxisAlignment
+                              .start,
                           children: [
                             Text(
-                              widget.item.title,
+                              widget
+                                  .item
+                                  .title,
                               maxLines: 1,
                               overflow:
-                              TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              TextOverflow
+                                  .ellipsis,
+                              style:
+                              const TextStyle(
+                                color:
+                                Colors.white,
                                 fontSize: 14,
                                 fontWeight:
-                                FontWeight.w700,
+                                FontWeight
+                                    .w700,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                            const SizedBox(
+                              height: 6,
+                            ),
                             Text(
-                              widget.item.subtitle,
+                              widget
+                                  .item
+                                  .subtitle,
                               maxLines: 1,
                               overflow:
-                              TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              TextOverflow
+                                  .ellipsis,
+                              style:
+                              const TextStyle(
+                                color:
+                                Colors.white38,
                                 fontSize: 10,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      AnimatedContainer(
-                        duration:
-                        const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      Container(
+                        padding:
+                        const EdgeInsets
+                            .symmetric(
                           horizontal: 13,
                           vertical: 8,
                         ),
-                        decoration: BoxDecoration(
-                          color: widget.item.color.withOpacity(
-                            _pressed ? 0.24 : 0.14,
+                        decoration:
+                        BoxDecoration(
+                          color:
+                          widget.item
+                              .color
+                              .withOpacity(
+                            0.14,
                           ),
                           borderRadius:
-                          BorderRadius.circular(30),
-                          border: Border.all(
-                            color: widget.item.color
+                          BorderRadius
+                              .circular(
+                            30,
+                          ),
+                          border:
+                          Border.all(
+                            color:
+                            widget.item
+                                .color
                                 .withOpacity(
-                              _pressed ? 0.50 : 0.28,
+                              0.28,
                             ),
                           ),
                         ),
                         child: Text(
                           'BUKA',
                           style: TextStyle(
-                            color: widget.item.color,
+                            color:
+                            widget
+                                .item
+                                .color,
                             fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.7,
+                            fontWeight:
+                            FontWeight
+                                .w800,
+                            letterSpacing:
+                            0.7,
                           ),
                         ),
                       ),
@@ -810,35 +968,53 @@ class _TransactionPlaceholderPage
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      ) {
     return Scaffold(
-      backgroundColor: const Color(0xff050505),
+      backgroundColor:
+      const Color(0xff050505),
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: const Color(0xff050505),
-        foregroundColor: Colors.white,
+        backgroundColor:
+        const Color(0xff050505),
+        foregroundColor:
+        Colors.white,
         title: Text(
           title,
           style: const TextStyle(
             fontSize: 17,
-            fontWeight: FontWeight.w700,
+            fontWeight:
+            FontWeight.w700,
           ),
         ),
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(28),
+          padding:
+          const EdgeInsets.all(28),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment:
+            MainAxisAlignment.center,
             children: [
               Container(
                 width: 94,
                 height: 94,
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.11),
-                  borderRadius: BorderRadius.circular(28),
+                decoration:
+                BoxDecoration(
+                  color:
+                  color.withOpacity(
+                    0.11,
+                  ),
+                  borderRadius:
+                  BorderRadius.circular(
+                    28,
+                  ),
                   border: Border.all(
-                    color: color.withOpacity(0.22),
+                    color:
+                    color.withOpacity(
+                      0.22,
+                    ),
                   ),
                 ),
                 child: Icon(
@@ -850,19 +1026,23 @@ class _TransactionPlaceholderPage
               const SizedBox(height: 25),
               Text(
                 title,
-                textAlign: TextAlign.center,
+                textAlign:
+                TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 25,
-                  fontWeight: FontWeight.w800,
+                  fontWeight:
+                  FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 10),
               Text(
                 subtitle,
-                textAlign: TextAlign.center,
+                textAlign:
+                TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white38,
+                  color:
+                  Colors.white38,
                   fontSize: 13,
                 ),
               ),
@@ -870,7 +1050,8 @@ class _TransactionPlaceholderPage
               const Text(
                 'Halaman sedang dikembangkan',
                 style: TextStyle(
-                  color: Colors.white24,
+                  color:
+                  Colors.white24,
                   fontSize: 11,
                 ),
               ),

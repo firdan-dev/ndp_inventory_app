@@ -352,6 +352,7 @@ class _RadiatorPageState extends State<RadiatorPage> {
                       barcode: barcodeC.text.trim(),
                       qty: int.tryParse(qtyC.text) ?? 1,
                       notes: notesC.text,
+                      noSuratJalan: noSuratJalanC.text.trim(),
                     );
 
                     if (!context.mounted) return;

@@ -7,8 +7,9 @@ class Fip {
   final String partNo;
   final String brand;
   final int qty;
+  final int minStock;
 
-  Fip({
+  const Fip({
     required this.id,
     required this.pumpId,
     required this.kodePump,
@@ -17,18 +18,97 @@ class Fip {
     required this.partNo,
     required this.brand,
     required this.qty,
+    this.minStock = 5,
   });
 
-  factory Fip.fromJson(Map<String, dynamic> json) {
+  factory Fip.fromJson(
+      Map<String, dynamic> json,
+      ) {
     return Fip(
-      id: json['id'] ?? 0,
-      pumpId: json['pump_id'] ?? '',
-      kodePump: json['kode_pump'] ?? '',
-      nama: json['nama'] ?? '',
-      fuelInjection: json['fuel_injection'] ?? '',
-      partNo: json['part_no'] ?? '',
-      brand: json['brand'] ?? '',
-      qty: json['qty'] ?? 0,
+      id: _toInt(
+        json['id'],
+      ),
+      pumpId: _toText(
+        json['pump_id'],
+      ),
+      kodePump: _toText(
+        json['kode_pump'],
+      ),
+      nama: _toText(
+        json['nama'],
+      ),
+      fuelInjection: _toText(
+        json['fuel_injection'],
+      ),
+      partNo: _toText(
+        json['part_no'],
+      ),
+      brand: _toText(
+        json['brand'],
+      ),
+      qty: _toInt(
+        json['qty'],
+      ),
+      minStock:
+      _toNullableInt(
+        json['min_stock'],
+      ) ??
+          5,
     );
+  }
+
+  static int _toInt(
+      dynamic value,
+      ) {
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value?.toString() ?? '',
+    ) ??
+        0;
+  }
+
+  static int? _toNullableInt(
+      dynamic value,
+      ) {
+    if (value == null) {
+      return null;
+    }
+
+    if (value is int) {
+      return value;
+    }
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value.toString(),
+    );
+  }
+
+  static String _toText(
+      dynamic value,
+      ) {
+    if (value == null) {
+      return '';
+    }
+
+    final text =
+    value.toString().trim();
+
+    if (text.toLowerCase() ==
+        'null') {
+      return '';
+    }
+
+    return text;
   }
 }

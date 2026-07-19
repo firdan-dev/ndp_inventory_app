@@ -10,8 +10,9 @@ class Injector {
   final String lokasi;
   final String ket;
   final String barcode;
+  final int minStock;
 
-  Injector({
+  const Injector({
     required this.id,
     required this.injectorId,
     required this.kodeInjector,
@@ -23,21 +24,72 @@ class Injector {
     required this.lokasi,
     required this.ket,
     required this.barcode,
+    this.minStock = 5,
   });
 
-  factory Injector.fromJson(Map<String, dynamic> json) {
+  factory Injector.fromJson(
+      Map<String, dynamic> json,
+      ) {
     return Injector(
-      id: json['id'] ?? 0,
-      injectorId: json['injector_id'] ?? '',
-      kodeInjector: json['kode_injector'] ?? '',
-      nama: json['nama'] ?? '',
-      merk: json['merk'] ?? '',
-      partNo: json['part_no'] ?? '',
-      noSeri: json['no_seri'] ?? '',
-      qty: json['qty'] ?? 0,
-      lokasi: json['lokasi'] ?? '',
-      ket: json['ket'] ?? '',
-      barcode: json['barcode'] ?? '',
+      id: _toInt(json['id']),
+      injectorId:
+      _toText(json['injector_id']),
+      kodeInjector:
+      _toText(json['kode_injector']),
+      nama: _toText(json['nama']),
+      merk: _toText(json['merk']),
+      partNo: _toText(json['part_no']),
+      noSeri: _toText(json['no_seri']),
+      qty: _toInt(json['qty']),
+      lokasi: _toText(json['lokasi']),
+      ket: _toText(json['ket']),
+      barcode: _toText(json['barcode']),
+      minStock:
+      _toNullableInt(
+        json['min_stock'],
+      ) ??
+          5,
     );
+  }
+
+  static int _toInt(dynamic value) {
+    if (value is int) return value;
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value?.toString() ?? '',
+    ) ??
+        0;
+  }
+
+  static int? _toNullableInt(
+      dynamic value,
+      ) {
+    if (value == null) return null;
+
+    if (value is int) return value;
+
+    if (value is num) {
+      return value.toInt();
+    }
+
+    return int.tryParse(
+      value.toString(),
+    );
+  }
+
+  static String _toText(dynamic value) {
+    if (value == null) return '';
+
+    final text = value.toString().trim();
+
+    if (text.toLowerCase() == 'null') {
+      return '';
+    }
+
+    return text;
   }
 }

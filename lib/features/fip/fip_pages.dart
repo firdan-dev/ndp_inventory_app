@@ -280,11 +280,11 @@ class _FipPageState extends State<FipPage> {
                   onPressed: () async {
                     if (selected == null) return;
 
-                    await FipApi.stockOutFip({
-                      "id": selected!.id,
-                      "qty": int.tryParse(qtyC.text) ?? 0,
-                      "notes": notesC.text.trim(),
-                    });
+                    await FipApi.stockOut(
+                      id: selected!.id,
+                      qty: int.tryParse(qtyC.text) ?? 0,
+                      notes: notesC.text.trim(),
+                    );
 
                     if (!context.mounted) return;
                     Navigator.pop(context);

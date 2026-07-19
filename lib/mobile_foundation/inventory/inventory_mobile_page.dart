@@ -1,8 +1,14 @@
 import 'dart:ui';
+import 'package:ndp_inventory_app/mobile_foundation/fip_mobile/pages/fip_mobile_page.dart';
+
 import 'master_barang/master_barang_mobile_page.dart';
 import 'package:flutter/material.dart';
-import 'master_barang/master_barang_mobile_page.dart';
 import 'master_supplier/master_supplier_mobile_page.dart';
+import '../service_customer_mobile/pages/service_customer_mobile_page.dart';
+import '../radiator_mobile/pages/radiator_mobile_page.dart';
+import '../injector_mobile/pages/injector_mobile_page.dart';
+import '../fip_mobile/pages/fip_mobile_page.dart';
+
 
 class InventoryMobilePage extends StatefulWidget {
   final String role;
@@ -488,58 +494,82 @@ class _InventoryMobilePageState extends State<InventoryMobilePage> {
   void _openMenu(_InventoryMenuItem item) {
     FocusScope.of(context).unfocus();
 
-    if (item.title == 'Master Barang') {
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          transitionDuration: const Duration(milliseconds: 350),
-          pageBuilder: (_, animation, secondaryAnimation) {
-            return const MasterBarangMobilePage();
-          },
-          transitionsBuilder: (
-              context,
-              animation,
-              secondaryAnimation,
-              child,
-              ) {
-            final fade = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOut,
-            );
+    Widget destinationPage;
 
-            final slide = Tween<Offset>(
-              begin: const Offset(0.05, 0),
-              end: Offset.zero,
-            ).animate(
-              CurvedAnimation(
-                parent: animation,
-                curve: Curves.easeOutCubic,
-              ),
-            );
+    switch (item.title) {
+      case 'Master Barang':
+        destinationPage = const MasterBarangMobilePage();
+        break;
 
-            return FadeTransition(
-              opacity: fade,
-              child: SlideTransition(
-                position: slide,
-                child: child,
-              ),
-            );
-          },
-        ),
-      );
-      return;
-    }
+      case 'Master Supplier':
+        destinationPage = const MasterSupplierMobilePage();
+        break;
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _InventoryPlaceholderPage(
+      case 'Service Customer':
+        destinationPage = const ServiceCustomerMobilePage();
+        break;
+
+      case 'Radiator':
+        destinationPage = const RadiatorMobilePage();
+        break;
+      case 'Injector':
+        destinationPage = const InjectorMobilePage();
+        break;
+      case 'Fuel Injection':
+        destinationPage = const FipMobilePage();
+        break;
+
+      default:
+        destinationPage = _InventoryPlaceholderPage(
           title: item.title,
           subtitle: item.subtitle,
           icon: item.icon,
           color: item.color,
-        ),
+        );
+    }
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 350),
+        pageBuilder: (_, animation, secondaryAnimation) {
+          return destinationPage;
+        },
+        transitionsBuilder: (
+            context,
+            animation,
+            secondaryAnimation,
+            child,
+            ) {
+          final fade = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOut,
+          );
+
+          final slide = Tween<Offset>(
+            begin: const Offset(0.05, 0),
+            end: Offset.zero,
+          ).animate(
+            CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+            ),
+          );
+
+          return FadeTransition(
+            opacity: fade,
+            child: SlideTransition(
+              position: slide,
+              child: child,
+            ),
+          );
+        },
       ),
     );
   }
+
+
+
+
 
   Widget _buildEmptySearch() {
     return Padding(

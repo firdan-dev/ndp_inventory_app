@@ -158,8 +158,10 @@ final ketC = TextEditingController(text: i.ket.isNotEmpty ? i.ket : "");
                   onPressed: () async {
                     if (selected == null) return;
 
-                    await InjectorApi.stockInExisting(
-                      existingId: selected!.id,
+                    await InjectorApi.stockIn(
+                      barcode: selected!.barcode.isNotEmpty
+                          ? selected!.barcode
+                          : selected!.kodeInjector,
                       qty: int.tryParse(qtyC.text) ?? 0,
                       notes: notesC.text,
                     );
